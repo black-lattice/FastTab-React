@@ -1,4 +1,4 @@
-import { useSearch } from '../hooks/useSearch';
+import { useSearch } from '../../hooks/useSearch';
 import './SearchSection.css';
 
 export const SearchSection: React.FC = () => {
@@ -21,12 +21,12 @@ export const SearchSection: React.FC = () => {
             value={selectedEngine.value}
             onChange={(e) => {
               const engine = searchEngines.find(
-                (eng) => eng.value === e.target.value
+                (eng: { value: string; label: string }) => eng.value === e.target.value
               );
               if (engine) setSelectedEngine(engine);
             }}
           >
-            {searchEngines.map((engine) => (
+            {searchEngines.map((engine: { value: string; label: string }) => (
               <option key={engine.value} value={engine.value}>
                 {engine.label}
               </option>

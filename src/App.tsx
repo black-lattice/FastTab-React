@@ -1,5 +1,5 @@
-import { SearchSection } from './components/SearchSection';
-import { BookmarksContainer } from './components/BookmarksContainer';
+import { SearchSection } from './components/UI/SearchSection';
+import { BookmarksContainer } from './components/Container/BookmarksContainer';
 import { useBookmarks } from './hooks/useBookmarks';
 import './App.css';
 
