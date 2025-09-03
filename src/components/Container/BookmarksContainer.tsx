@@ -15,6 +15,7 @@ interface BookmarksContainerProps {
 	onRequestPermission: () => Promise<void>;
 	onDeleteBookmark: (id: string) => void;
 	onUpdateBookmark: (id: string, changes: Partial<Bookmark>) => Promise<void>;
+	onBookmarkMoved?: () => void;
 }
 
 export const BookmarksContainer: React.FC<BookmarksContainerProps> = ({
@@ -24,7 +25,8 @@ export const BookmarksContainer: React.FC<BookmarksContainerProps> = ({
 	permissionState,
 	onRequestPermission,
 	onDeleteBookmark,
-	onUpdateBookmark
+	onUpdateBookmark,
+	onBookmarkMoved
 }) => {
 	const [editModal, setEditModal] = useState<{
 		isOpen: boolean;
@@ -100,6 +102,7 @@ export const BookmarksContainer: React.FC<BookmarksContainerProps> = ({
 							folder={folder}
 							onEdit={handleEdit}
 							onDelete={onDeleteBookmark}
+							onBookmarkMoved={onBookmarkMoved}
 						/>
 					))}
 				</div>

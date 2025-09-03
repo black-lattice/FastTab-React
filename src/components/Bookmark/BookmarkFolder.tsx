@@ -7,12 +7,14 @@ interface BookmarkFolderProps {
 	folder: Bookmark;
 	onEdit: (bookmark: Bookmark) => void;
 	onDelete: (id: string) => void;
+	onBookmarkMoved?: () => void;
 }
 
 export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 	folder,
 	onEdit,
-	onDelete
+	onDelete,
+	onBookmarkMoved
 }) => {
 	const [isExpanded, setIsExpanded] = useState(true);
 
@@ -39,11 +41,12 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 						<div className='bookmarks-grid'>
 							{bookmarks.map((bookmark) => (
 								<BookmarkCard
-									key={bookmark.id}
-									bookmark={bookmark}
-									onEdit={onEdit}
-									onDelete={onDelete}
-								/>
+							key={bookmark.id}
+							bookmark={bookmark}
+							onEdit={onEdit}
+							onDelete={onDelete}
+							onBookmarkMoved={onBookmarkMoved}
+						/>
 							))}
 						</div>
 					)}

@@ -6,12 +6,14 @@ interface BookmarkCardProps {
 	bookmark: Bookmark;
 	onEdit: (bookmark: Bookmark) => void;
 	onDelete: (id: string) => void;
+	onBookmarkMoved?: () => void;
 }
 
 export const BookmarkCard: React.FC<BookmarkCardProps> = ({
 	bookmark,
 	onEdit,
-	onDelete
+	onDelete,
+	onBookmarkMoved
 }) => {
 	const {
 		handleDragStart,
@@ -20,7 +22,7 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
 		handleDrop,
 		handleDragEnd,
 		dragOverItem
-	} = useDragDrop();
+	} = useDragDrop({ onBookmarkMoved });
 
 	const handleEdit = (e: React.MouseEvent) => {
 		e.preventDefault();
@@ -67,11 +69,26 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
 				dragOverItem === bookmark.id ? 'drag-over' : ''
 			}`}
 			draggable
-			onDragStart={(e) => handleDragStart(e, bookmark)}
-			onDragOver={(e) => handleDragOver(e, bookmark.id)}
-			onDragLeave={handleDragLeave}
-			onDrop={(e) => handleDrop(e, bookmark.id)}
-			onDragEnd={handleDragEnd}
+			onDragStart={(e) => {
+				console.log('拖拽开始:', bookmark.title);
+				handleDragStart(e, bookmark);
+			}}
+			onDragOver={(e) => {
+				console.log('拖拽经过:', bookmark.title);
+				handleDragOver(e, bookmark.id);
+			}}
+			onDragLeave={() => {
+				console.log('拖拽离开:', bookmark.title);
+				handleDragLeave();
+			}}
+			onDrop={(e) => {
+				console.log('拖拽放置:', bookmark.title);
+				handleDrop(e, bookmark.id);
+				handleDragEnd();
+			}}
+			onDragEnd={() => {
+				console.log('拖拽结束:', bookmark.title);
+			}}
 			onClick={handleClick}
 			title={`${bookmark.title}\n${bookmark.url}`}
 		>
