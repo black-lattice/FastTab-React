@@ -44,11 +44,10 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
 	// 获取网站图标URL
 	const getFaviconUrl = (url: string) => {
 		try {
-			const urlObj = new URL(url);
-			const hostname = urlObj.hostname;
-
 			// 使用多个图标服务作为备选
-			return `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
+			return chrome.runtime.getURL(
+				`_favicon/?pageUrl=${encodeURIComponent(url)}&size=48`
+			);
 		} catch (error) {
 			console.warn('无效的URL格式:', url, error);
 			return '';
@@ -80,11 +79,14 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
 				<div className='bookmark-icon-container'>
 					<img
 						className='bookmark-icon'
-						src={
-							faviconUrl ||
-							'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiByeD0iNCIgZmlsbD0iI2U1ZTVlNSIvPgo8cGF0aCBkPSJNMTAgNkM4LjM0MzE1IDYgNyA3LjM0MzE1IDcgOUM3IDEwLjY1NjkgOC4zNDMxNSAxMiAxMCAxMkMxMS42NTY5IDEyIDEzIDEwLjY1NjkgMTMgOUMxMyA3LjM0MzE1IDExLjY1NjkgNiAxMCA2WiIgZmlsbD0iIzk5OTk5OSIvPgo8cGF0aCBkPSJNMTAgMTNDNy43OTA4NiAxMyA2IDE0Ljc5MDkgNiAxN0g3QzcgMTUuMzQzOSA4LjM0MzE1IDE0IDEwIDE0QzExLjY1NjkgMTQgMTMgMTUuMzQzOSAxMyAxN0gxNEMxNCAxNC43OTA5IDEyLjIwOTEgMTMgMTAgMTNaIiBmaWxsPSIjOTk5OTk5Ii8+Cjwvc3ZnPgo='
-						}
-						alt=''
+						src={faviconUrl}
+						onLoad={(e) => {
+							// 如果图标加载成功，隐藏备选div
+							const fallback = (e.target as HTMLImageElement).parentElement?.querySelector('.bookmark-icon-fallback');
+							if (fallback) {
+								(fallback as HTMLElement).style.display = 'none';
+							}
+						}}
 						onError={(e) => {
 							// 如果图标加载失败，隐藏图片并显示标题首字符
 							(e.target as HTMLImageElement).style.display = 'none';
