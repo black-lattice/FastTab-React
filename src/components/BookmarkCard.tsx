@@ -37,7 +37,8 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
   };
 
   const handleClick = () => {
-    window.open(bookmark.url, '_blank');
+    // 在当前页签打开链接，而不是新页签
+    window.location.href = bookmark.url;
   };
 
   // 获取网站图标URL
