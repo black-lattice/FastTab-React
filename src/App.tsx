@@ -1,5 +1,6 @@
 import { SearchSection } from './components/UI/SearchSection';
 import { BookmarksContainer } from './components/Container/BookmarksContainer';
+import { BackgroundSettings } from './components/UI/BackgroundSettings';
 import { useBookmarks } from './hooks/useBookmarks';
 import './App.css';
 
@@ -49,6 +50,7 @@ function App() {
           onDeleteBookmark={handleDeleteBookmark}
           onUpdateBookmark={handleUpdateBookmark}
         />
+        <BackgroundSettings />
       </div>
     </div>
   );
