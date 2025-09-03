@@ -1,0 +1,65 @@
+/* 重置样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: #333;
+}
+
+.App {
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+
+  .bookmarks-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+  }
+
+  .search-section {
+    margin-bottom: 20px;
+  }
+
+  .search-input-wrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .search-engine-select {
+    min-width: auto;
+    width: 100%;
+    border-radius: 20px;
+  }
+
+  .search-input {
+    border-radius: 20px;
+  }
+
+  .search-button {
+    border-radius: 20px;
+    width: 100%;
+  }
+}

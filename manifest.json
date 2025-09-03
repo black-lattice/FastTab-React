@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "FastTab React",
+  "version": "1.0.0",
+  "description": "快速标签页管理器 - React 版本",
+  "permissions": [
+    "bookmarks",
+    "storage"
+  ],
+  "chrome_url_overrides": {
+    "newtab": "./src/newtab.html"
+  },
+  "icons": {
+    "16": "./icons/icon16.png",
+    "48": "./icons/icon48.png",
+    "128": "./icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "./src/popup.html",
+    "default_title": "FastTab React"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: https:;"
+  }
+}
