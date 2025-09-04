@@ -238,7 +238,6 @@ export const useBookmarks = () => {
 				}
 				let newIndex =
 					dragged.index > target.index ? target.index : target.index + 1;
-
 				// 如果位置相同，不需要移动
 				if (dragged.index === newIndex) {
 					return;
@@ -261,8 +260,7 @@ export const useBookmarks = () => {
 					if (draggedIndex !== -1 && targetIndex !== -1) {
 						// 移动书签到新位置
 						const [movedBookmark] = newBookmarks.splice(draggedIndex, 1);
-						const insertIndex =
-							draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
+						const insertIndex = targetIndex;
 						newBookmarks.splice(insertIndex, 0, movedBookmark);
 					}
 
@@ -285,11 +283,10 @@ export const useBookmarks = () => {
 							);
 
 							if (draggedIndex !== -1 && targetIndex !== -1) {
-								const [movedBookmark] = newChildren.splice(draggedIndex, 1);
-								const insertIndex =
-									draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
-								newChildren.splice(insertIndex, 0, movedBookmark);
-							}
+						const [movedBookmark] = newChildren.splice(draggedIndex, 1);
+						const insertIndex = targetIndex;
+						newChildren.splice(insertIndex, 0, movedBookmark);
+					}
 
 							return { ...folder, children: newChildren };
 						}
