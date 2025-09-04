@@ -6,7 +6,7 @@
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.1),
     0 1px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
   overflow: hidden;
@@ -14,19 +14,27 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  transform: translateZ(0);
+  will-change: transform, box-shadow, background;
 }
 
 .bookmark-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.02);
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 2px 6px rgba(0, 0, 0, 0.1);
+    0 6px 16px rgba(0, 0, 0, 0.15),
+    0 3px 8px rgba(0, 0, 0, 0.1);
   background: rgba(255, 255, 255, 0.95);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bookmark-card.drag-over {
   border: 1px dashed #667eea;
   background: rgba(102, 126, 234, 0.1);
+  transform: scale(1.05);
+  box-shadow:
+    0 4px 12px rgba(102, 126, 234, 0.2),
+    0 2px 6px rgba(102, 126, 234, 0.1);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bookmark-content {

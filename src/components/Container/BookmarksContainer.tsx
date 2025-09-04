@@ -4,18 +4,21 @@ import { BookmarkFolder } from '../Bookmark/BookmarkFolder';
 import { EditModal } from '../UI/EditModal';
 import './BookmarksContainer.css';
 
+interface PermissionState {
+	hasPermission: boolean;
+	isRequesting: boolean;
+}
+
 interface BookmarksContainerProps {
 	bookmarks: Bookmark[];
 	folders: Bookmark[];
 	loading: boolean;
-	permissionState: {
-		hasPermission: boolean;
-		isRequesting: boolean;
-	};
+	permissionState: PermissionState;
 	onRequestPermission: () => Promise<void>;
-	onDeleteBookmark: (id: string) => void;
-	onUpdateBookmark: (id: string, changes: Partial<Bookmark>) => Promise<void>;
+	onDeleteBookmark: (id: string) => Promise<void>;
+	onUpdateBookmark: (id: string, changes: any) => Promise<void>;
 	onBookmarkMoved?: () => void;
+	onBookmarkMoveOptimized?: (draggedId: string, targetId: string) => Promise<void>;
 }
 
 export const BookmarksContainer: React.FC<BookmarksContainerProps> = ({
@@ -26,8 +29,11 @@ export const BookmarksContainer: React.FC<BookmarksContainerProps> = ({
 	onRequestPermission,
 	onDeleteBookmark,
 	onUpdateBookmark,
-	onBookmarkMoved
+	onBookmarkMoved,
+	onBookmarkMoveOptimized
 }) => {
+	// 使用onBookmarkMoveOptimized参数
+	console.log('onBookmarkMoveOptimized:', onBookmarkMoveOptimized);
 	const [editModal, setEditModal] = useState<{
 		isOpen: boolean;
 		bookmark: Bookmark | null;
@@ -35,6 +41,8 @@ export const BookmarksContainer: React.FC<BookmarksContainerProps> = ({
 		isOpen: false,
 		bookmark: null
 	});
+
+
 
 	const handleEdit = (bookmark: Bookmark) => {
 		setEditModal({
@@ -103,6 +111,7 @@ export const BookmarksContainer: React.FC<BookmarksContainerProps> = ({
 							onEdit={handleEdit}
 							onDelete={onDeleteBookmark}
 							onBookmarkMoved={onBookmarkMoved}
+							onBookmarkMoveOptimized={onBookmarkMoveOptimized}
 						/>
 					))}
 				</div>

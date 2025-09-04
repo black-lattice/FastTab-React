@@ -13,7 +13,8 @@ function App() {
     requestPermission,
     updateBookmark,
     removeBookmark,
-    loadBookmarks
+    loadBookmarks,
+    moveBookmarkOptimized
   } = useBookmarks();
 
   const handleRequestPermission = async () => {
@@ -51,6 +52,7 @@ function App() {
           onDeleteBookmark={handleDeleteBookmark}
           onUpdateBookmark={handleUpdateBookmark}
           onBookmarkMoved={loadBookmarks}
+          onBookmarkMoveOptimized={moveBookmarkOptimized}
         />
         <BackgroundSettings />
       </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bookmark } from '../../types';
-import { BookmarkCard } from './BookmarkCard';
+import BookmarkCard from './BookmarkCard';
 import './BookmarkFolder.css';
 
 interface BookmarkFolderProps {
@@ -8,19 +8,23 @@ interface BookmarkFolderProps {
 	onEdit: (bookmark: Bookmark) => void;
 	onDelete: (id: string) => void;
 	onBookmarkMoved?: () => void;
+	onBookmarkMoveOptimized?: (draggedId: string, targetId: string) => Promise<void>;
 }
 
 export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 	folder,
 	onEdit,
 	onDelete,
-	onBookmarkMoved
+	onBookmarkMoved,
+	onBookmarkMoveOptimized
 }) => {
 	const [isExpanded, setIsExpanded] = useState(true);
 
 	const toggleExpanded = () => {
 		setIsExpanded(!isExpanded);
 	};
+
+
 
 	// 只过滤出当前文件夹内的书签（有 URL 的），不显示子文件夹
 	const bookmarks = folder.children?.filter((item) => item.url) || [];
@@ -41,12 +45,13 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 						<div className='bookmarks-grid'>
 							{bookmarks.map((bookmark) => (
 								<BookmarkCard
-							key={bookmark.id}
-							bookmark={bookmark}
-							onEdit={onEdit}
-							onDelete={onDelete}
-							onBookmarkMoved={onBookmarkMoved}
-						/>
+						key={bookmark.id}
+						bookmark={bookmark}
+						onEdit={onEdit}
+						onDelete={onDelete}
+						onBookmarkMoved={onBookmarkMoved}
+						onBookmarkMoveOptimized={onBookmarkMoveOptimized}
+					/>
 							))}
 						</div>
 					)}

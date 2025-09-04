@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Bookmark } from '../../types';
 import { useDragDrop } from '../../hooks/useDragDrop';
 import './BookmarkCard.css';
@@ -7,13 +8,15 @@ interface BookmarkCardProps {
 	onEdit: (bookmark: Bookmark) => void;
 	onDelete: (id: string) => void;
 	onBookmarkMoved?: () => void;
+	onBookmarkMoveOptimized?: (draggedId: string, targetId: string) => Promise<void>;
 }
 
-export const BookmarkCard: React.FC<BookmarkCardProps> = ({
+const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 	bookmark,
 	onEdit,
 	onDelete,
-	onBookmarkMoved
+	onBookmarkMoved,
+	onBookmarkMoveOptimized
 }) => {
 	const {
 		handleDragStart,
@@ -22,7 +25,7 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
 		handleDrop,
 		handleDragEnd,
 		dragOverItem
-	} = useDragDrop({ onBookmarkMoved });
+	} = useDragDrop({ onBookmarkMoved, onBookmarkMoveOptimized });
 
 	const handleEdit = (e: React.MouseEvent) => {
 		e.preventDefault();
@@ -84,10 +87,11 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
 			onDrop={(e) => {
 				console.log('拖拽放置:', bookmark.title);
 				handleDrop(e, bookmark.id);
-				handleDragEnd();
+				// handleDragEnd会在handleDrop内部异步完成后调用
 			}}
 			onDragEnd={() => {
 				console.log('拖拽结束:', bookmark.title);
+				handleDragEnd();
 			}}
 			onClick={handleClick}
 			title={`${bookmark.title}\n${bookmark.url}`}
@@ -151,3 +155,5 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
 		</div>
 	);
 };
+
+export default memo(BookmarkCardComponent);
