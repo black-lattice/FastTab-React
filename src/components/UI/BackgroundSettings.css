@@ -5,8 +5,8 @@
 
 .background-settings {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 16px;
+  right: 16px;
   z-index: 1000;
 }
 
@@ -34,13 +34,13 @@
 /* 设置面板 */
 .background-settings-panel {
   position: absolute;
-  bottom: 70px;
+  bottom: 60px;
   right: 0;
-  width: 300px;
+  width: 280px;
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 16px;
   animation: slideIn 0.3s ease;
 }
 
@@ -59,14 +59,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #eee;
 }
 
 .settings-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #333;
 }
@@ -94,24 +94,24 @@
 .settings-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .setting-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .setting-group label {
   font-weight: 500;
   color: #333;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .radio-group {
   display: flex;
-  gap: 20px;
+  gap: 16px;
 }
 
 .radio-group label {
@@ -125,8 +125,8 @@
 .color-presets {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .color-preset {
@@ -157,10 +157,10 @@
 
 .url-input {
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
 }
 
 .url-input:focus {
@@ -170,16 +170,16 @@
 
 .settings-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .settings-actions button {
   flex: 1;
-  padding: 10px;
+  padding: 8px;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
 }

@@ -19,13 +19,13 @@ body {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 16px;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .container {
-    padding: 15px;
+    padding: 12px;
   }
 
   .bookmarks-grid {
@@ -36,11 +36,11 @@ body {
 
 @media (max-width: 480px) {
   .container {
-    padding: 10px;
+    padding: 8px;
   }
 
   .search-section {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .search-input-wrapper {

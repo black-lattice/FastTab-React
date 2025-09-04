@@ -1,19 +1,19 @@
 .bookmark-card {
   background: rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  padding: 12px;
-  margin: 6px;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 4px;
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.1),
-    0 1px 4px rgba(0, 0, 0, 0.05);
+    0 2px 6px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  min-height: 60px;
+  min-height: 52px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transform: translateZ(0);
   will-change: transform, box-shadow, background;
 }
@@ -40,14 +40,14 @@
 .bookmark-content {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
 
 .bookmark-icon-container {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   position: relative;
   display: flex;
@@ -63,12 +63,12 @@
 }
 
 .bookmark-icon-fallback {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 4px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -89,7 +89,7 @@
 }
 
 .bookmark-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: #333;
   line-height: 1.2;
@@ -100,7 +100,7 @@
 }
 
 .bookmark-url {
-  font-size: 10px;
+  font-size: 9px;
   color: #666;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -1,6 +1,6 @@
 .bookmark-folder {
-  margin-bottom: 20px;
-  border-radius: 16px;
+  margin-bottom: 16px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -17,7 +17,7 @@
 .folder-header {
   display: flex;
   align-items: center;
-  padding: 16px 20px;
+  padding: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
   user-select: none;
@@ -29,27 +29,27 @@
 }
 
 .folder-icon {
-  font-size: 20px;
-  margin-right: 12px;
-  width: 24px;
+  font-size: 18px;
+  margin-right: 10px;
+  width: 20px;
   text-align: center;
 }
 
 .folder-title {
   flex: 1;
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .folder-count {
-  margin: 0 16px;
-  padding: 4px 12px;
+  margin: 0 12px;
+  padding: 3px 10px;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  font-size: 12px;
+  border-radius: 10px;
+  font-size: 11px;
   color: white;
   font-weight: 500;
 }
@@ -63,13 +63,13 @@
 }
 
 .folder-content {
-  padding: 16px 20px;
+  padding: 4px;
 }
 
 .folder-content .bookmarks-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
 }
 
 
@@ -77,7 +77,7 @@
 /* 空文件夹提示 */
 .empty-folder {
   text-align: center;
-  padding: 40px 20px;
+  padding: 16px 16px;
   color: rgba(255, 255, 255, 0.6);
   font-style: italic;
 }

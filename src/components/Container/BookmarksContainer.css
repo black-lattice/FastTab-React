@@ -4,9 +4,8 @@
 
 .bookmarks-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-  padding: 20px 0;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
 }
 
 @media (max-width: 1200px) {
@@ -17,38 +16,38 @@
 
 @media (max-width: 768px) {
   .bookmarks-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px;
-    padding: 16px 0;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    padding: 10px 0;
   }
 }
 
 @media (max-width: 480px) {
   .bookmarks-grid {
     grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 12px 0;
+    gap: 6px;
+    padding: 8px 0;
   }
 }
 
 /* 文件夹部分样式 */
 .folders-section {
-  margin-bottom: 30px;
+  margin-bottom: 6px;
 }
 
 .root-bookmarks-section {
-  margin-bottom: 30px;
+  margin-bottom: 6px;
 }
 
 .section-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   color: white;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .loading {
@@ -56,7 +55,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 16px 16px;
   color: white;
 }
 
@@ -67,7 +66,7 @@
   border-top: 4px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 @keyframes spin {
@@ -87,7 +86,7 @@
 
 .permission-request {
   text-align: center;
-  padding: 60px 20px;
+  padding: 16px 16px;
   color: white;
   max-width: 500px;
   margin: 0 auto;
@@ -101,7 +100,7 @@
 
 .permission-request p {
   font-size: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.6;
 }
@@ -110,9 +109,9 @@
   background: rgba(255, 255, 255, 0.2);
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: white;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-size: 16px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -132,13 +131,13 @@
 
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 16px 16px;
   color: white;
 }
 
 .empty-state h3 {
   font-size: 24px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   color: white;
 }
 
@@ -157,7 +156,7 @@
 
   .folders-section,
   .root-bookmarks-section {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
   }
 }
 
@@ -169,6 +168,6 @@
 
   .folders-section,
   .root-bookmarks-section {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 }
