@@ -68,11 +68,11 @@
   background: transparent;
   font-size: 15px;
   outline: none;
-  color: var(--text-primary);
+  color: #333;
 }
 
 .search-input::placeholder {
-  color: var(--text-tertiary);
+  color: #333;
 }
 
 .search-button {
