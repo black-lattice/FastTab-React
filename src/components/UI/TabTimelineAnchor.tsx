@@ -27,7 +27,7 @@ export const TabTimelineAnchor: React.FC<TabTimelineAnchorProps> = ({
 		if (folderElement) {
 			folderElement.scrollIntoView({
 				behavior: 'smooth',
-				block: 'start'
+				block: 'center'
 			});
 		}
 	};
