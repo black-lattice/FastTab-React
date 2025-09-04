@@ -1,4 +1,4 @@
-import { useSearch } from '../../hooks/useSearch';
+import { useSearch } from '../../../hooks/useSearch';
 import './SearchSection.css';
 
 export const SearchSection: React.FC = () => {

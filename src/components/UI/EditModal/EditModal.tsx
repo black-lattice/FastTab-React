@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bookmark } from '../../types';
+import { Bookmark } from '../../../types';
 import './EditModal.css';
 
 interface EditModalProps {

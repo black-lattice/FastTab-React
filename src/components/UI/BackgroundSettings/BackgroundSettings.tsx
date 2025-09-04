@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useBackground, BackgroundSettings as BackgroundConfig } from '../../hooks/useBackground';
+import { useBackground, BackgroundSettings as BackgroundConfig } from '../../../hooks/useBackground';
 import './BackgroundSettings.css';
 
 /**

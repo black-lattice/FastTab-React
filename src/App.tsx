@@ -1,7 +1,7 @@
-import { SearchSection } from './components/UI/SearchSection';
+import { SearchSection } from './components/UI/SearchSection/SearchSection';
 import { BookmarksContainer } from './components/Container/BookmarksContainer';
-import { BackgroundSettings } from './components/UI/BackgroundSettings';
-import { TabTimelineAnchor } from './components/UI/TabTimelineAnchor';
+import { BackgroundSettings } from './components/UI/BackgroundSettings/BackgroundSettings';
+import { TabTimelineAnchor } from './components/UI/TabTimelineAnchor/TabTimelineAnchor';
 import { useBookmarks } from './hooks/useBookmarks';
 import './App.css';
 

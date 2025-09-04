@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Bookmark } from '../../types';
 import { BookmarkFolder } from '../Bookmark/BookmarkFolder';
-import { EditModal } from '../UI/EditModal';
+import { EditModal } from '../UI/EditModal/EditModal';
 import './BookmarksContainer.css';
 
 interface PermissionState {

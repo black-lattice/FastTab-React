@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bookmark } from '../../types';
+import { Bookmark } from '../../../types';
 import './TabTimelineAnchor.css';
 
 interface TabTimelineAnchorProps {
