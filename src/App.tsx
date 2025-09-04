@@ -1,6 +1,7 @@
 import { SearchSection } from './components/UI/SearchSection';
 import { BookmarksContainer } from './components/Container/BookmarksContainer';
 import { BackgroundSettings } from './components/UI/BackgroundSettings';
+import { TabTimelineAnchor } from './components/UI/TabTimelineAnchor';
 import { useBookmarks } from './hooks/useBookmarks';
 import './App.css';
 
@@ -55,7 +56,16 @@ function App() {
           onBookmarkMoveOptimized={moveBookmarkOptimized}
         />
         <BackgroundSettings />
-      </div>
+		<TabTimelineAnchor 
+			folders={folders}
+			onFolderClick={(folderId) => {
+				const folderElement = document.getElementById(`folder-${folderId}`);
+				if (folderElement) {
+					folderElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				}
+			}}
+		/>
+		</div>
     </div>
   );
 }

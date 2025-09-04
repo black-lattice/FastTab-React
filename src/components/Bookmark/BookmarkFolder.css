@@ -1,17 +1,8 @@
 .bookmark-folder {
   margin-bottom: 16px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
   overflow: hidden;
   transition: all 0.3s ease;
-}
-
-.bookmark-folder:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.25);
-  transform: translateY(-1px);
 }
 
 .folder-header {
@@ -27,14 +18,6 @@
 .folder-header:hover {
   background: rgba(255, 255, 255, 0.05);
 }
-
-.folder-icon {
-  font-size: 18px;
-  margin-right: 10px;
-  width: 20px;
-  text-align: center;
-}
-
 .folder-title {
   flex: 1;
   margin: 0;
@@ -54,22 +37,13 @@
   font-weight: 500;
 }
 
-.folder-toggle {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  transition: transform 0.3s ease;
-  width: 20px;
-  text-align: center;
-}
-
 .folder-content {
   padding: 4px;
 }
 
 .folder-content .bookmarks-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
 }
 
 
@@ -90,7 +64,7 @@
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .folder-content .bookmarks-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   }
 }
 
@@ -118,7 +92,7 @@
   }
 
   .folder-content .bookmarks-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     gap: 10px;
   }
 }

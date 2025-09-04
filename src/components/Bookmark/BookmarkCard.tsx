@@ -8,7 +8,10 @@ interface BookmarkCardProps {
 	onEdit: (bookmark: Bookmark) => void;
 	onDelete: (id: string) => void;
 	onBookmarkMoved?: () => void;
-	onBookmarkMoveOptimized?: (draggedId: string, targetId: string) => Promise<void>;
+	onBookmarkMoveOptimized?: (
+		draggedId: string,
+		targetId: string
+	) => Promise<void>;
 }
 
 const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
@@ -51,7 +54,7 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 		try {
 			// 使用多个图标服务作为备选
 			return chrome.runtime.getURL(
-				`_favicon/?pageUrl=${encodeURIComponent(url)}&size=48`
+				`_favicon/?pageUrl=${encodeURIComponent(url)}&size=128`
 			);
 		} catch (error) {
 			console.warn('无效的URL格式:', url, error);
@@ -103,7 +106,9 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 						src={faviconUrl}
 						onLoad={(e) => {
 							// 如果图标加载成功，隐藏备选div
-							const fallback = (e.target as HTMLImageElement).parentElement?.querySelector('.bookmark-icon-fallback');
+							const fallback = (
+								e.target as HTMLImageElement
+							).parentElement?.querySelector('.bookmark-icon-fallback');
 							if (fallback) {
 								(fallback as HTMLElement).style.display = 'none';
 							}
