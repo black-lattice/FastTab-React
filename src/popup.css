@@ -15,13 +15,13 @@ body {
 }
 
 .header h1 {
-  color: #667eea;
+  color: var(--primary-color);
   margin: 0 0 4px 0;
   font-size: 18px;
 }
 
 .header p {
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
   font-size: 12px;
 }
@@ -33,7 +33,7 @@ body {
 .section h3 {
   font-size: 13px;
   margin: 0 0 8px 0;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .button {
@@ -43,7 +43,7 @@ body {
   margin: 4px 0;
   border: none;
   border-radius: 4px;
-  background: #667eea;
+  background: var(--primary-color);
   color: white;
   cursor: pointer;
   font-size: 13px;
@@ -53,12 +53,12 @@ body {
 }
 
 .button:hover {
-  background: #5a6fd8;
+  background: var(--primary-color);
 }
 
 .button.secondary {
   background: #f0f0f0;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .button.secondary:hover {
@@ -67,7 +67,7 @@ body {
 
 .info {
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   text-align: center;
   margin-top: 10px;
 }

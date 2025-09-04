@@ -47,6 +47,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #FFFFFF;
+  border-radius: 10px;
+  padding: 10px;
 }
 
 .bookmark-icon {
@@ -86,7 +89,7 @@
 .bookmark-title {
   font-size: 12px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -152,7 +155,7 @@
 
 .drag-handle {
   cursor: grab;
-  color: #999;
+  color: var(--text-tertiary);
   font-size: 9px;
   padding: 3px;
   border-radius: 3px;
@@ -168,7 +171,7 @@
 
 .drag-handle:hover {
   background: rgba(0, 0, 0, 0.1);
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .drag-handle:active {

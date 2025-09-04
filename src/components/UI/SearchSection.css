@@ -46,14 +46,14 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #667eea;
+  color: var(--primary-color);
   min-width: 110px;
   text-align: center;
 }
 
 .search-engine-select:hover {
   background: rgba(102, 126, 234, 0.1);
-  color: #5a6fd8;
+  color: var(--primary-color);
 }
 
 .search-engine-select:focus {
@@ -68,11 +68,11 @@
   background: transparent;
   font-size: 15px;
   outline: none;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .search-input::placeholder {
-  color: #999;
+  color: var(--text-tertiary);
 }
 
 .search-button {
