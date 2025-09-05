@@ -1,0 +1,63 @@
+.bookmark-manager {
+  position: fixed;
+  right: 20px;
+  bottom: 80px;
+  z-index: 1000;
+}
+
+.bookmark-manager-btn {
+  border-radius: 50%;
+  background: var(--primary-color);
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bookmark-manager-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.bookmark-manager-btn:active {
+  transform: scale(0.95);
+}
+
+/* 模态框样式 */
+.bookmark-management-content {
+  padding: 16px 0;
+}
+
+.batch-operations {
+  margin-bottom: 16px;
+  padding: 8px 16px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #666;
+}
+
+/* 表格样式优化 */
+.ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #f5f5f5;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .bookmark-manager {
+    right: 10px;
+    bottom: 10px;
+  }
+  
+  .bookmark-manager-btn {
+    width: 40px;
+    height: 40px;
+  }
+}

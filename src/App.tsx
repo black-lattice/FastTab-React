@@ -2,6 +2,7 @@ import { SearchSection } from './components/UI/SearchSection/SearchSection';
 import { BookmarksContainer } from './components/Container/BookmarksContainer';
 import { BackgroundSettings } from './components/UI/BackgroundSettings/BackgroundSettings';
 import { TabTimelineAnchor } from './components/UI/TabTimelineAnchor/TabTimelineAnchor';
+import BookmarkManager from './components/Bookmark/BookmarkManager';
 import { useBookmarks } from './hooks/useBookmarks';
 import './App.css';
 
@@ -65,6 +66,7 @@ function App() {
 				}
 			}}
 		/>
+		<BookmarkManager />
 		</div>
     </div>
   );

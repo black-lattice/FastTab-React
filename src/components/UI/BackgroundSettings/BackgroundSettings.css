@@ -5,15 +5,15 @@
 
 .background-settings {
   position: fixed;
-  bottom: 16px;
-  right: 16px;
+  bottom: 20px;
+  right: 20px;
   z-index: 1000;
 }
 
 /* 触发按钮 */
 .background-settings-trigger {
-  width: 50px;
-  height: 50px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: none;
   background: #ffffff;
