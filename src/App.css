@@ -25,6 +25,32 @@ body {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   color: var(--text-primary);
+  position: relative;
+}
+
+/* 半透明黑色蒙层 - 增强白色字体可读性 */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* 显示蒙层 */
+body.show-overlay::before {
+  opacity: 1;
+}
+
+/* 隐藏蒙层 */
+body.hide-overlay::before {
+  opacity: 0;
 }
 
 /* 深色主题样式 */

@@ -83,10 +83,13 @@ export const useBackground = () => {
   };
 
   /**
-   * 应用背景样式到页面，并根据背景深浅调整文字颜色
+   * 应用背景样式到页面，并根据背景深浅调整文字颜色和蒙层显示
    */
   const applyBackground = (bgSettings: BackgroundSettings) => {
     const body = document.body;
+    
+    // 移除之前的蒙层类
+    body.classList.remove('show-overlay', 'hide-overlay');
     
     if (bgSettings.type === 'color') {
       body.style.background = bgSettings.value;
@@ -95,15 +98,17 @@ export const useBackground = () => {
       body.style.backgroundSize = '';
       body.style.backgroundRepeat = '';
       
-      // 根据背景颜色深浅设置文字颜色
+      // 根据背景颜色深浅设置文字颜色和蒙层
       const isDark = isDarkColor(bgSettings.value);
       if (isDark) {
         body.classList.add('dark-theme');
+        body.classList.add('hide-overlay'); // 深色背景隐藏蒙层
         document.documentElement.style.setProperty('--text-primary', '#ffffff');
         document.documentElement.style.setProperty('--text-secondary', '#cccccc');
         document.documentElement.style.setProperty('--text-tertiary', '#aaaaaa');
       } else {
         body.classList.remove('dark-theme');
+        body.classList.add('show-overlay'); // 浅色背景显示蒙层
         document.documentElement.style.setProperty('--text-primary', '#333333');
         document.documentElement.style.setProperty('--text-secondary', '#666666');
         document.documentElement.style.setProperty('--text-tertiary', '#999999');
@@ -115,8 +120,9 @@ export const useBackground = () => {
       body.style.backgroundSize = 'cover';
       body.style.backgroundRepeat = 'no-repeat';
       
-      // 图片背景使用深色文字
+      // 图片背景使用深色文字并显示蒙层
       body.classList.add('dark-theme');
+      body.classList.add('show-overlay'); // 图片背景显示蒙层
       document.documentElement.style.setProperty('--text-primary', '#ffffff');
       document.documentElement.style.setProperty('--text-secondary', '#cccccc');
       document.documentElement.style.setProperty('--text-tertiary', '#aaaaaa');
@@ -133,6 +139,8 @@ export const useBackground = () => {
     document.body.style.backgroundPosition = '';
     document.body.style.backgroundSize = '';
     document.body.style.backgroundRepeat = '';
+    // 清除蒙层状态
+    document.body.classList.remove('show-overlay', 'hide-overlay');
   };
 
   useEffect(() => {
