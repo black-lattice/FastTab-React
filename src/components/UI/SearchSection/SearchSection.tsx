@@ -2,14 +2,7 @@ import { useSearch } from '../../../hooks/useSearch';
 import './SearchSection.css';
 
 export const SearchSection: React.FC = () => {
-	const {
-		searchQuery,
-		setSearchQuery,
-		selectedEngine,
-		setSelectedEngine,
-		searchEngines,
-		handleKeyPress
-	} = useSearch();
+	const { searchQuery, setSearchQuery, selectedEngine, setSelectedEngine, searchEngines, handleKeyPress } = useSearch();
 
 	return (
 		<header className='search-section'>
@@ -18,16 +11,14 @@ export const SearchSection: React.FC = () => {
 					<select
 						className='search-engine-select'
 						value={selectedEngine.value}
-						onChange={(e) => {
-							const engine = searchEngines.find(
-								(eng: { value: string; label: string }) =>
-									eng.value === e.target.value
-							);
+						onChange={e => {
+							const engine = searchEngines.find((eng: { value: string; label: string }) => eng.value === e.target.value);
 							if (engine) setSelectedEngine(engine);
-						}}
-					>
+						}}>
 						{searchEngines.map((engine: { value: string; label: string }) => (
-							<option key={engine.value} value={engine.value}>
+							<option
+								key={engine.value}
+								value={engine.value}>
 								{engine.label}
 							</option>
 						))}
@@ -36,7 +27,7 @@ export const SearchSection: React.FC = () => {
 						type='text'
 						className='search-input'
 						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
+						onChange={e => setSearchQuery(e.target.value)}
 						onKeyPress={handleKeyPress}
 						placeholder='搜索...'
 						autoFocus
