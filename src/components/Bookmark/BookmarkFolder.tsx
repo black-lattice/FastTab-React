@@ -37,11 +37,8 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 				className='flex items-center p-1 cursor-pointer transition-all duration-300 hover:bg-transparent border-b border-transparent'
 				onClick={toggleExpanded}>
 				<h3 className='flex-1 text-lg font-semibold text-white'>
-					{folder.title}
+					{folder.title} {bookmarks.length} 个书签
 				</h3>
-				<div className='ml-3 px-2 py-1 bg-transparent rounded-full text-xs text-white font-medium'>
-					{bookmarks.length} 个书签
-				</div>
 			</div>
 
 			{isExpanded && (
