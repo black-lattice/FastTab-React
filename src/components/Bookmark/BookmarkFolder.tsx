@@ -31,7 +31,7 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 
 	return (
 		<div
-			className='mb-4 bg-transparent rounded-xl overflow-hidden'
+			className='bg-transparent rounded-xl overflow-hidden'
 			id={`folder-${folder.id}`}>
 			<div
 				className='flex items-center p-1 cursor-pointer transition-all duration-300 hover:bg-transparent border-b border-transparent'
@@ -48,7 +48,7 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 				<div className='p-2 w-full'>
 					{/* 只显示当前文件夹内的书签,不显示子文件夹 */}
 					{bookmarks.length > 0 && (
-						<div className='grid grid-cols-[repeat(auto-fit,70px)] w-full'>
+						<div className='grid grid-cols-[repeat(auto-fit,80px)] w-full gap-2'>
 							{bookmarks.map(bookmark => (
 								<BookmarkCard
 									key={bookmark.id}

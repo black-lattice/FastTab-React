@@ -54,7 +54,7 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 		try {
 			// 使用64px尺寸的图标，提高显示效果
 			return chrome.runtime.getURL(
-				`_favicon/?pageUrl=${encodeURIComponent(url)}&size=64`
+				`_favicon/?pageUrl=${encodeURIComponent(url)}&size=128`
 			);
 		} catch (error) {
 			console.warn('无效的URL格式:', url, error);
@@ -95,7 +95,7 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 
 	return (
 		<div
-			className='bg-transparent hover:bg-transparent rounded-lg cursor-pointer transition-all duration-200 w-16 h-28 flex flex-col'
+			className='bg-transparent hover:bg-transparent rounded-lg cursor-pointer transition-all duration-200 flex flex-col'
 			draggable
 			onDragStart={e => {
 				console.log('拖拽开始:', bookmark.title);
@@ -122,31 +122,42 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 			onMouseEnter={() => setShowActionButtons(true)}
 			onMouseLeave={() => setShowActionButtons(false)}
 			title={`${bookmark.title}\n${bookmark.url}`}>
-			<div className='flex flex-col items-center justify-center h-full space-y-2'>
-				<div className='w-10 h-10 flex-shrink-0 relative'>
+			<div className='flex flex-col items-center justify-center h-full'>
+				<div
+					className='flex-shrink-0 relative'
+					style={{ width: '60px', height: '60px' }}>
+					{/* 毛玻璃背景 - 只在显示备选字母时显示 */}
+					{(!imageLoaded || imageError) && (
+						<div
+							className='absolute inset-0 backdrop-blur-sm bg-white/10 border border-white/20 rounded'
+							style={{ width: '60px', height: '60px' }}></div>
+					)}
 					{!imageError && (
 						<img
-							className='w-10 h-10 rounded'
+							className='rounded relative z-10'
+							style={{ width: '60px', height: '60px' }}
 							src={faviconUrl}
 							onLoad={handleImageLoad}
 							onError={handleImageError}
 						/>
 					)}
 					{(!imageLoaded || imageError) && (
-						<div className='w-10 h-10 flex items-center justify-center bg-transparent rounded text-white text-sm font-medium'>
+						<div
+							className='flex items-center justify-center text-white text-lg font-medium relative z-10'
+							style={{ width: '60px', height: '60px' }}>
 							{getFirstChar(bookmark.title)}
 						</div>
 					)}
 					{showActionButtons && (
-						<div className='absolute -top-2 -right-2 flex items-center space-x-1 bg-white/10 backdrop-blur-md rounded-lg p-1.5 shadow-lg border border-white/20 z-50'>
+						<div className='absolute -top-2 -right-2 flex items-center space-x-1 bg-white/10 backdrop-blur-md rounded-lg shadow-lg border border-white/20 z-50 gap-2 px-1'>
 							<button
-								className='p-1 hover:bg-white/30 rounded text-white text-xs transition-all duration-200 hover:scale-110'
+								className='hover:bg-white/30 rounded text-white text-xs transition-all duration-200 hover:scale-110'
 								onClick={handleEdit}
 								title='编辑'>
 								✏️
 							</button>
 							<button
-								className='p-1 hover:bg-white/30 rounded text-white text-xs transition-all duration-200 hover:scale-110'
+								className=' hover:bg-white/30 rounded text-white text-xs transition-all duration-200 hover:scale-110'
 								onClick={handleDelete}
 								title='删除'>
 								🗑️
@@ -155,7 +166,7 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 					)}
 				</div>
 				<div
-					className='text-white text-xs font-medium leading-tight break-words overflow-hidden text-center mt-2 h-8 flex items-center justify-center'
+					className='text-white text-sm font-medium leading-tight break-words overflow-hidden text-center h-8 flex items-center justify-center mt-2'
 					style={{
 						display: '-webkit-box',
 						WebkitLineClamp: 2,
