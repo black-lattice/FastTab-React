@@ -4,7 +4,6 @@ import { DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Bookmark } from '../../types';
 import { useBookmarks } from '../../hooks/useBookmarks';
-import './BookmarkManagementModal.css';
 
 interface BookmarkManagementModalProps {
 	visible: boolean;
@@ -33,7 +32,9 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 	onMoveBookmark
 }) => {
 	const { folders } = useBookmarks();
-	const [movingBookmarkId, setMovingBookmarkId] = useState<string | null>(null);
+	const [movingBookmarkId, setMovingBookmarkId] = useState<string | null>(
+		null
+	);
 
 	/**
 	 * 格式化日期显示
@@ -109,12 +110,14 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 				<input
 					type='checkbox'
 					checked={selectedBookmarkIds.includes(id)}
-					onChange={(e) => {
+					onChange={e => {
 						if (e.target.checked) {
 							onSelectionChange([...selectedBookmarkIds, id]);
 						} else {
 							onSelectionChange(
-								selectedBookmarkIds.filter((selectedId) => selectedId !== id)
+								selectedBookmarkIds.filter(
+									selectedId => selectedId !== id
+								)
 							);
 						}
 					}}
@@ -147,7 +150,11 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 			key: 'url',
 			ellipsis: true,
 			render: (url: string) => (
-				<a href={url} target='_blank' rel='noopener noreferrer' title={url}>
+				<a
+					href={url}
+					target='_blank'
+					rel='noopener noreferrer'
+					title={url}>
 					{url}
 				</a>
 			)
@@ -167,19 +174,18 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 				<Space size='small'>
 					<Dropdown
 						menu={{
-							items: folders.map((folder) => ({
+							items: folders.map(folder => ({
 								key: folder.id,
 								label: folder.title,
-								onClick: () => handleMoveToFolder(record.id, folder.id)
+								onClick: () =>
+									handleMoveToFolder(record.id, folder.id)
 							}))
 						}}
-						trigger={['click']}
-					>
+						trigger={['click']}>
 						<Button
 							size='small'
 							loading={movingBookmarkId === record.id}
-							disabled={movingBookmarkId !== null}
-						>
+							disabled={movingBookmarkId !== null}>
 							移动
 						</Button>
 					</Dropdown>
@@ -189,7 +195,7 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 	];
 
 	// 批量操作下拉菜单项
-	const batchOperationItems = folders.map((folder) => ({
+	const batchOperationItems = folders.map(folder => ({
 		key: folder.id,
 		label: `移动到 ${folder.title}`,
 		onClick: () => handleBatchMove(folder.id)
@@ -201,15 +207,18 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 			open={visible}
 			onCancel={onClose}
 			footer={[
-				<Button key='close' onClick={onClose}>
+				<Button
+					key='close'
+					onClick={onClose}>
 					关闭
 				</Button>,
 				<Dropdown
 					key='move'
 					menu={{ items: batchOperationItems }}
-					disabled={selectedBookmarkIds.length === 0}
-				>
-					<Button type='primary' disabled={selectedBookmarkIds.length === 0}>
+					disabled={selectedBookmarkIds.length === 0}>
+					<Button
+						type='primary'
+						disabled={selectedBookmarkIds.length === 0}>
 						批量移动
 					</Button>
 				</Dropdown>,
@@ -219,16 +228,15 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 					danger
 					icon={<DeleteOutlined />}
 					onClick={onBatchDelete}
-					disabled={selectedBookmarkIds.length === 0}
-				>
+					disabled={selectedBookmarkIds.length === 0}>
 					批量删除
 				</Button>
 			]}
 			width='70%'
 			style={{ height: '70vh' }}
-		>
-			<div className='bookmark-management-content'>
-				<div className='batch-operations'>
+			bodyStyle={{ padding: 0 }}>
+			<div className='p-6'>
+				<div className='mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 font-medium'>
 					<span>已选择 {selectedBookmarkIds.length} 个书签</span>
 				</div>
 

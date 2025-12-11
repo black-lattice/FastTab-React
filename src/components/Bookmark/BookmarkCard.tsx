@@ -1,7 +1,6 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Bookmark } from '../../types';
 import { useDragDrop } from '../../hooks/useDragDrop';
-import './BookmarkCard.css';
 
 interface BookmarkCardProps {
 	bookmark: Bookmark;
@@ -26,9 +25,10 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 		handleDragOver,
 		handleDragLeave,
 		handleDrop,
-		handleDragEnd,
-		dragOverItem
+		handleDragEnd
 	} = useDragDrop({ onBookmarkMoved, onBookmarkMoveOptimized });
+
+	const [showActionButtons, setShowActionButtons] = useState(false);
 
 	const handleEdit = (e: React.MouseEvent) => {
 		e.preventDefault();
@@ -52,9 +52,9 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 	// 获取网站图标URL
 	const getFaviconUrl = (url: string) => {
 		try {
-			// 使用多个图标服务作为备选
+			// 使用64px尺寸的图标，提高显示效果
 			return chrome.runtime.getURL(
-				`_favicon/?pageUrl=${encodeURIComponent(url)}&size=128`
+				`_favicon/?pageUrl=${encodeURIComponent(url)}&size=64`
 			);
 		} catch (error) {
 			console.warn('无效的URL格式:', url, error);
@@ -62,24 +62,46 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 		}
 	};
 
+	const [imageLoaded, setImageLoaded] = useState(false);
+	const [imageError, setImageError] = useState(false);
+
 	const faviconUrl = getFaviconUrl(bookmark.url);
+
+	const handleImageLoad = () => {
+		setImageLoaded(true);
+		setImageError(false);
+	};
+
+	const handleImageError = () => {
+		setImageLoaded(false);
+		setImageError(true);
+	};
+
+	// 处理书签标题，如果包含 '-' 则只显示 '-' 之前的内容
+	const getDisplayTitle = (title: string) => {
+		if (!title) return '';
+		const dashIndex = title.indexOf('-');
+		if (dashIndex > 0) {
+			return title.substring(0, dashIndex).trim();
+		}
+		return title;
+	};
 
 	// 获取标题的第一个字符作为备选显示
 	const getFirstChar = (title: string) => {
-		return title?.trim().charAt(0).toUpperCase() || '🔗';
+		const displayTitle = getDisplayTitle(title);
+		return displayTitle?.trim().charAt(0).toUpperCase() || '🔗';
 	};
 
 	return (
 		<div
-			className={`bookmark-card ${
-				dragOverItem === bookmark.id ? 'drag-over' : ''
-			}`}
+			className='bg-transparent hover:bg-transparent rounded-lg cursor-pointer transition-all duration-200 w-16 h-28 flex flex-col'
 			draggable
-			onDragStart={(e) => {
+			onDragStart={e => {
 				console.log('拖拽开始:', bookmark.title);
 				handleDragStart(e, bookmark);
 			}}
-			onDragOver={(e) => {
+			onDragOver={e => {
 				console.log('拖拽经过:', bookmark.title);
 				handleDragOver(e, bookmark.id);
 			}}
@@ -87,7 +109,7 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 				console.log('拖拽离开:', bookmark.title);
 				handleDragLeave();
 			}}
-			onDrop={(e) => {
+			onDrop={e => {
 				console.log('拖拽放置:', bookmark.title);
 				handleDrop(e, bookmark.id);
 				// handleDragEnd会在handleDrop内部异步完成后调用
@@ -97,64 +119,51 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 				handleDragEnd();
 			}}
 			onClick={handleClick}
-			title={`${bookmark.title}\n${bookmark.url}`}
-		>
-			<div className='bookmark-content'>
-				<div className='bookmark-icon-container'>
-					<img
-						className='bookmark-icon'
-						src={faviconUrl}
-						onLoad={(e) => {
-							// 如果图标加载成功，隐藏备选div
-							const fallback = (
-								e.target as HTMLImageElement
-							).parentElement?.querySelector('.bookmark-icon-fallback');
-							if (fallback) {
-								(fallback as HTMLElement).style.display = 'none';
-							}
-						}}
-						onError={(e) => {
-							// 如果图标加载失败，隐藏图片并显示标题首字符
-							(e.target as HTMLImageElement).style.display = 'none';
-						}}
-					/>
-					<div className='bookmark-icon-fallback'>
-						{getFirstChar(bookmark.title)}
-					</div>
+			onMouseEnter={() => setShowActionButtons(true)}
+			onMouseLeave={() => setShowActionButtons(false)}
+			title={`${bookmark.title}\n${bookmark.url}`}>
+			<div className='flex flex-col items-center justify-center h-full space-y-2'>
+				<div className='w-10 h-10 flex-shrink-0 relative'>
+					{!imageError && (
+						<img
+							className='w-10 h-10 rounded'
+							src={faviconUrl}
+							onLoad={handleImageLoad}
+							onError={handleImageError}
+						/>
+					)}
+					{(!imageLoaded || imageError) && (
+						<div className='w-10 h-10 flex items-center justify-center bg-transparent rounded text-white text-sm font-medium'>
+							{getFirstChar(bookmark.title)}
+						</div>
+					)}
+					{showActionButtons && (
+						<div className='absolute -top-2 -right-2 flex items-center space-x-1 bg-white/10 backdrop-blur-md rounded-lg p-1.5 shadow-lg border border-white/20 z-50'>
+							<button
+								className='p-1 hover:bg-white/30 rounded text-white text-xs transition-all duration-200 hover:scale-110'
+								onClick={handleEdit}
+								title='编辑'>
+								✏️
+							</button>
+							<button
+								className='p-1 hover:bg-white/30 rounded text-white text-xs transition-all duration-200 hover:scale-110'
+								onClick={handleDelete}
+								title='删除'>
+								🗑️
+							</button>
+						</div>
+					)}
 				</div>
-				<div className='bookmark-info'>
-					<div className='bookmark-title' title={bookmark.title}>
-						{bookmark.title}
-					</div>
-					<div className='bookmark-url' title={bookmark.url}>
-						{(() => {
-							try {
-								return new URL(bookmark.url).hostname;
-							} catch {
-								return bookmark.url;
-							}
-						})()}
-					</div>
-				</div>
-			</div>
-
-			<div className='bookmark-actions'>
-				<button
-					className='action-button edit-button'
-					onClick={handleEdit}
-					title='编辑'
-				>
-					✏️
-				</button>
-				<button
-					className='action-button delete-button'
-					onClick={handleDelete}
-					title='删除'
-				>
-					🗑️
-				</button>
-				<div className='drag-handle' title='拖拽排序'>
-					⋮⋮
+				<div
+					className='text-white text-xs font-medium leading-tight break-words overflow-hidden text-center mt-2 h-8 flex items-center justify-center'
+					style={{
+						display: '-webkit-box',
+						WebkitLineClamp: 2,
+						WebkitBoxOrient: 'vertical',
+						wordBreak: 'break-word',
+						overflowWrap: 'break-word'
+					}}>
+					{getDisplayTitle(bookmark.title)}
 				</div>
 			</div>
 		</div>

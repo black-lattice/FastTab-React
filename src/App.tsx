@@ -1,13 +1,21 @@
 import { SearchSection } from './components/UI/SearchSection/SearchSection';
 import { BookmarksContainer } from './components/Container/BookmarksContainer';
 import { BackgroundSettings } from './components/UI/BackgroundSettings/BackgroundSettings';
-import { TabTimelineAnchor } from './components/UI/TabTimelineAnchor/TabTimelineAnchor';
 import BookmarkManager from './components/Bookmark/BookmarkManager';
 import { useBookmarks } from './hooks/useBookmarks';
-import './App.css';
 
 function App() {
-	const { bookmarks, folders, loading, permissionState, requestPermission, updateBookmark, removeBookmark, loadBookmarks, moveBookmarkOptimized } = useBookmarks();
+	const {
+		bookmarks,
+		folders,
+		loading,
+		permissionState,
+		requestPermission,
+		updateBookmark,
+		removeBookmark,
+		loadBookmarks,
+		moveBookmarkOptimized
+	} = useBookmarks();
 
 	const handleRequestPermission = async () => {
 		await requestPermission();
@@ -32,8 +40,8 @@ function App() {
 	};
 
 	return (
-		<div className='App'>
-			<div className='container'>
+		<div className='min-h-screen px-8'>
+			<div className='flex flex-col'>
 				<SearchSection />
 				<BookmarksContainer
 					bookmarks={bookmarks}
@@ -47,15 +55,6 @@ function App() {
 					onBookmarkMoveOptimized={moveBookmarkOptimized}
 				/>
 				<BackgroundSettings />
-				<TabTimelineAnchor
-					folders={folders}
-					onFolderClick={folderId => {
-						const folderElement = document.getElementById(`folder-${folderId}`);
-						if (folderElement) {
-							folderElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-						}
-					}}
-				/>
 				<BookmarkManager />
 			</div>
 		</div>

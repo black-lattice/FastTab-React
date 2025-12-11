@@ -1,6 +1,5 @@
 import React from 'react';
 import { Bookmark } from '../../../types';
-import './TabTimelineAnchor.css';
 
 interface TabTimelineAnchorProps {
 	folders: Bookmark[];
@@ -33,15 +32,16 @@ export const TabTimelineAnchor: React.FC<TabTimelineAnchorProps> = ({
 	};
 
 	return (
-		<div className='tab-timeline-anchor'>
-			<div className='anchor-content'>
-				{folders.map((folder) => (
-					<div key={folder.id} className='timeline-item'>
+		<div className='fixed top-25 left-4 z-[999] rounded-lg overflow-hidden'>
+			<div className='flex flex-col gap-2 pl-1 border-l border-white'>
+				{folders.map(folder => (
+					<div
+						key={folder.id}
+						className='text-left'>
 						<button
-							className='folder-anchor'
+							className='w-auto p-0 bg-transparent cursor-pointer text-xs text-white whitespace-nowrap font-medium font-sans transition-all duration-200 hover:text-blue-300 hover:scale-105'
 							onClick={() => handleFolderClick(folder.id)}
-							title={folder.title}
-						>
+							title={folder.title}>
 							{folder.title}
 						</button>
 					</div>

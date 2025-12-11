@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* CSS 变量定义 - 用于动态颜色调整 */
+:root {
+  /* 文字颜色变量 */
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --text-black: #000000;
+  
+  /* 背景相关变量 */
+  --background-dark: rgba(0, 0, 0, 0.7);
+  
+  /* 主题色变量 */
+  --primary-color: #667eea;
+}
+
+/* 深色主题样式 */
+body.dark-theme {
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-tertiary: #aaaaaa;
+}
+
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: var(--text-primary);
+  position: relative;
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+body::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+html {
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* 为所有可能产生滚动的容器隐藏滚动条 */
+* {
+  /* 隐藏所有元素的滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* 半透明黑色蒙层 - 增强白色字体可读性 */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* 显示蒙层 */
+body.show-overlay::before {
+  opacity: 1;
+}
+
+/* 隐藏蒙层 */
+body.hide-overlay::before {
+  opacity: 0;
+}
+
+/* 隐藏滚动条但保持滚动功能 */
+html {
+  /* 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
