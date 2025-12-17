@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
 import { Bookmark } from '../../types';
 import { useDragDrop } from '../../hooks/useDragDrop';
+import { useFavicon } from '../../hooks/useFavicon';
 
 interface BookmarkCardProps {
 	bookmark: Bookmark;
@@ -49,33 +50,8 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 		window.location.href = bookmark.url;
 	};
 
-	// 获取网站图标URL
-	const getFaviconUrl = (url: string) => {
-		try {
-			// 使用64px尺寸的图标，提高显示效果
-			return chrome.runtime.getURL(
-				`_favicon/?pageUrl=${encodeURIComponent(url)}&size=128`
-			);
-		} catch (error) {
-			console.warn('无效的URL格式:', url, error);
-			return '';
-		}
-	};
-
-	const [imageLoaded, setImageLoaded] = useState(false);
-	const [imageError, setImageError] = useState(false);
-
-	const faviconUrl = getFaviconUrl(bookmark.url);
-
-	const handleImageLoad = () => {
-		setImageLoaded(true);
-		setImageError(false);
-	};
-
-	const handleImageError = () => {
-		setImageLoaded(false);
-		setImageError(true);
-	};
+	// 使用 useFavicon hook 获取图标
+	const { faviconUrl, isLoading: faviconLoading } = useFavicon(bookmark.url);
 
 	// 处理书签标题，如果包含 '-' 则只显示 '-' 之前的内容
 	const getDisplayTitle = (title: string) => {
@@ -127,21 +103,18 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 					className='flex-shrink-0 relative'
 					style={{ width: '60px', height: '60px' }}>
 					{/* 毛玻璃背景 - 只在显示备选字母时显示 */}
-					{(!imageLoaded || imageError) && (
+					{(!faviconUrl || faviconLoading) && (
 						<div
 							className='absolute inset-0 backdrop-blur-sm bg-white/10 border border-white/20 rounded'
 							style={{ width: '60px', height: '60px' }}></div>
 					)}
-					{!imageError && (
-						<img
-							className='rounded relative z-10'
-							style={{ width: '60px', height: '60px' }}
-							src={faviconUrl}
-							onLoad={handleImageLoad}
-							onError={handleImageError}
-						/>
-					)}
-					{(!imageLoaded || imageError) && (
+					<img
+						className='rounded relative z-10'
+						style={{ width: '60px', height: '60px' }}
+						src={faviconUrl}
+						alt={bookmark.title}
+					/>
+					{(!faviconUrl || faviconLoading) && (
 						<div
 							className='flex items-center justify-center text-white text-lg font-medium relative z-10'
 							style={{ width: '60px', height: '60px' }}>
