@@ -19,10 +19,12 @@ export const EditModal: React.FC<EditModalProps> = ({
 
 	useEffect(() => {
 		if (bookmark) {
+			console.log('isOpen:', isOpen);
+			console.log('bookmark:', bookmark);
 			setTitle(bookmark.title);
 			setUrl(bookmark.url);
 		}
-	}, [bookmark]);
+	}, [isOpen, bookmark]);
 
 	const handleSave = async () => {
 		if (!title.trim() || !url.trim()) {
@@ -78,7 +80,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 							onKeyPress={handleKeyPress}
 							placeholder='书签标题'
 							autoFocus
-							className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors'
+							className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-gray-900'
 						/>
 					</div>
 					<div className='flex flex-col'>
@@ -94,7 +96,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 							onChange={e => setUrl(e.target.value)}
 							onKeyPress={handleKeyPress}
 							placeholder='https://example.com'
-							className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors'
+							className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-gray-900'
 						/>
 					</div>
 				</div>
