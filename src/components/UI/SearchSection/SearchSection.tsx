@@ -1,4 +1,5 @@
-import { useSearch } from '../../../hooks/useSearch';
+import React, { useEffect } from 'react';
+import { useSearchStore } from '../../../store/searchStore';
 
 export const SearchSection: React.FC = () => {
 	const {
@@ -7,8 +8,19 @@ export const SearchSection: React.FC = () => {
 		selectedEngine,
 		setSelectedEngine,
 		searchEngines,
-		handleKeyPress
-	} = useSearch();
+		performSearch,
+		loadSettings
+	} = useSearchStore();
+
+	useEffect(() => {
+		loadSettings();
+	}, [loadSettings]);
+
+	const handleKeyPress = (e: React.KeyboardEvent) => {
+		if (e.key === 'Enter') {
+			performSearch(searchQuery);
+		}
+	};
 
 	return (
 		<header className='sticky top-4 rounded-xl p-1.5 mb-4 z-50 w-full max-w-none transition-all duration-300'>

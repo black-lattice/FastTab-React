@@ -2,46 +2,39 @@ import { memo, useState } from 'react';
 import { Bookmark } from '../../types';
 import { useDragDrop } from '../../hooks/useDragDrop';
 import { useFavicon } from '../../hooks/useFavicon';
+import { useBookmarkStore } from '../../store/bookmarkStore';
+import { useUIStore } from '../../store/uiStore';
 
 interface BookmarkCardProps {
 	bookmark: Bookmark;
-	onEdit: (bookmark: Bookmark) => void;
-	onDelete: (id: string) => void;
-	onBookmarkMoved?: () => void;
-	onBookmarkMoveOptimized?: (
-		draggedId: string,
-		targetId: string
-	) => Promise<void>;
 }
 
 const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
-	bookmark,
-	onEdit,
-	onDelete,
-	onBookmarkMoved,
-	onBookmarkMoveOptimized
+	bookmark
 }) => {
+	const { removeBookmark } = useBookmarkStore();
+	const { openEditModal } = useUIStore();
 	const {
 		handleDragStart,
 		handleDragOver,
 		handleDragLeave,
 		handleDrop,
 		handleDragEnd
-	} = useDragDrop({ onBookmarkMoved, onBookmarkMoveOptimized });
+	} = useDragDrop();
 
 	const [showActionButtons, setShowActionButtons] = useState(false);
 
 	const handleEdit = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
-		onEdit(bookmark);
+		openEditModal(bookmark);
 	};
 
 	const handleDelete = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
 		if (confirm(`确定要删除书签 "${bookmark.title}" 吗？`)) {
-			onDelete(bookmark.id);
+			removeBookmark(bookmark.id);
 		}
 	};
 

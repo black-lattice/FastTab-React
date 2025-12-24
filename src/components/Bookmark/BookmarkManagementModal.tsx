@@ -3,38 +3,41 @@ import { Modal, Table, Space, Button, Dropdown, message } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Bookmark } from '../../types';
-import { useBookmarks } from '../../hooks/useBookmarks';
-
-interface BookmarkManagementModalProps {
-	visible: boolean;
-	onClose: () => void;
-	bookmarks: Bookmark[];
-	selectedBookmarkIds: string[];
-	onSelectionChange: (selectedIds: string[]) => void;
-	onBatchDelete: () => void;
-	onMoveBookmark: (
-		id: string,
-		destination: { parentId?: string; index?: number }
-	) => Promise<void>;
-}
+import { useBookmarkStore } from '../../store/bookmarkStore';
+import { useUIStore } from '../../store/uiStore';
 
 /**
  * 书签管理模态框组件
  * 提供书签的表格展示、选择和批量操作功能
  */
-const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
-	visible,
-	onClose,
-	bookmarks,
-	selectedBookmarkIds,
-	onSelectionChange,
-	onBatchDelete,
-	onMoveBookmark
-}) => {
-	const { folders } = useBookmarks();
+const BookmarkManagementModal: React.FC = () => {
+	const { bookmarks, folders, removeBookmark, moveBookmark } = useBookmarkStore();
+	const { bookmarkManager, closeBookmarkManager, setSelectedBookmarkIds } = useUIStore();
+	const { isOpen: visible, selectedIds: selectedBookmarkIds } = bookmarkManager;
+
 	const [movingBookmarkId, setMovingBookmarkId] = useState<string | null>(
 		null
 	);
+
+	/**
+	 * 批量删除选中的书签
+	 */
+	const handleBatchDelete = async () => {
+		if (selectedBookmarkIds.length === 0) {
+			message.warning('请选择要删除的书签');
+			return;
+		}
+
+		try {
+			for (const id of selectedBookmarkIds) {
+				await removeBookmark(id);
+			}
+			message.success(`成功删除 ${selectedBookmarkIds.length} 个书签`);
+			setSelectedBookmarkIds([]);
+		} catch (error) {
+			message.error('删除书签失败');
+		}
+	};
 
 	/**
 	 * 格式化日期显示
@@ -59,7 +62,7 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 	 * @param selectedRowKeys 选中的行key数组
 	 */
 	const handleRowSelectionChange = (selectedRowKeys: React.Key[]) => {
-		onSelectionChange(selectedRowKeys as string[]);
+		setSelectedBookmarkIds(selectedRowKeys as string[]);
 	};
 
 	/**
@@ -70,7 +73,7 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 	const handleMoveToFolder = async (bookmarkId: string, folderId: string) => {
 		try {
 			setMovingBookmarkId(bookmarkId);
-			await onMoveBookmark(bookmarkId, { parentId: folderId });
+			await moveBookmark(bookmarkId, { parentId: folderId });
 			message.success('移动成功');
 		} catch (error) {
 			message.error('移动失败');
@@ -91,10 +94,10 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 
 		try {
 			for (const id of selectedBookmarkIds) {
-				await onMoveBookmark(id, { parentId: folderId });
+				await moveBookmark(id, { parentId: folderId });
 			}
 			message.success(`成功移动 ${selectedBookmarkIds.length} 个书签`);
-			onSelectionChange([]);
+			setSelectedBookmarkIds([]);
 		} catch (error) {
 			message.error('移动书签失败');
 		}
@@ -112,9 +115,9 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 					checked={selectedBookmarkIds.includes(id)}
 					onChange={e => {
 						if (e.target.checked) {
-							onSelectionChange([...selectedBookmarkIds, id]);
+							setSelectedBookmarkIds([...selectedBookmarkIds, id]);
 						} else {
-							onSelectionChange(
+							setSelectedBookmarkIds(
 								selectedBookmarkIds.filter(
 									selectedId => selectedId !== id
 								)
@@ -205,11 +208,11 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 		<Modal
 			title='书签管理'
 			open={visible}
-			onCancel={onClose}
+			onCancel={closeBookmarkManager}
 			footer={[
 				<Button
 					key='close'
-					onClick={onClose}>
+					onClick={closeBookmarkManager}>
 					关闭
 				</Button>,
 				<Dropdown
@@ -227,7 +230,7 @@ const BookmarkManagementModal: React.FC<BookmarkManagementModalProps> = ({
 					type='primary'
 					danger
 					icon={<DeleteOutlined />}
-					onClick={onBatchDelete}
+					onClick={handleBatchDelete}
 					disabled={selectedBookmarkIds.length === 0}>
 					批量删除
 				</Button>

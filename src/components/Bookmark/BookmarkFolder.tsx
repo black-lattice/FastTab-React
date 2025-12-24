@@ -4,21 +4,10 @@ import BookmarkCard from './BookmarkCard';
 
 interface BookmarkFolderProps {
 	folder: Bookmark;
-	onEdit: (bookmark: Bookmark) => void;
-	onDelete: (id: string) => void;
-	onBookmarkMoved?: () => void;
-	onBookmarkMoveOptimized?: (
-		draggedId: string,
-		targetId: string
-	) => Promise<void>;
 }
 
 export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
-	folder,
-	onEdit,
-	onDelete,
-	onBookmarkMoved,
-	onBookmarkMoveOptimized
+	folder
 }) => {
 	const [isExpanded, setIsExpanded] = useState(true);
 
@@ -50,12 +39,6 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 								<BookmarkCard
 									key={bookmark.id}
 									bookmark={bookmark}
-									onEdit={onEdit}
-									onDelete={onDelete}
-									onBookmarkMoved={onBookmarkMoved}
-									onBookmarkMoveOptimized={
-										onBookmarkMoveOptimized
-									}
 								/>
 							))}
 						</div>

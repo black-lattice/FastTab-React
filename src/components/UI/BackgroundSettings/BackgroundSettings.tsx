@@ -1,18 +1,23 @@
-import { useState } from 'react';
-import {
-	useBackground,
-	BackgroundSettings as BackgroundConfig
-} from '../../../hooks/useBackground';
+import { useState, useEffect } from 'react';
+import { useBackgroundStore, BackgroundSettings as BackgroundConfig } from '../../../store/backgroundStore';
 
 /**
  * 背景设置组件
  * 提供纯色和图片背景设置功能，固定在右下角
  */
 export const BackgroundSettings = () => {
-	const { settings, saveSettings, clearBackground } = useBackground();
+	const { settings, saveSettings, clearBackground, loadSettings } = useBackgroundStore();
 	const [isOpen, setIsOpen] = useState(false);
-	const [tempSettings, setTempSettings] =
-		useState<BackgroundConfig>(settings);
+	const [tempSettings, setTempSettings] = useState<BackgroundConfig>(settings);
+
+	useEffect(() => {
+		loadSettings();
+	}, [loadSettings]);
+
+	// 当 store 中的 settings 改变时（例如加载完成），同步更新 tempSettings
+	useEffect(() => {
+		setTempSettings(settings);
+	}, [settings]);
 
 	// 预设颜色选项
 	const presetColors = [

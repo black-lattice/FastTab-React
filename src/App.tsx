@@ -2,58 +2,35 @@ import { SearchSection } from './components/UI/SearchSection/SearchSection';
 import { BookmarksContainer } from './components/Container/BookmarksContainer';
 import { BackgroundSettings } from './components/UI/BackgroundSettings/BackgroundSettings';
 import BookmarkManager from './components/Bookmark/BookmarkManager';
-import { useBookmarks } from './hooks/useBookmarks';
+import { useBookmarkStore } from './store/bookmarkStore';
+import { useBackgroundStore } from './store/backgroundStore';
+import { useEffect } from 'react';
 
 function App() {
 	const {
-		bookmarks,
-		folders,
-		loading,
-		permissionState,
-		requestPermission,
-		updateBookmark,
-		removeBookmark,
+		checkPermission,
 		loadBookmarks,
-		moveBookmarkOptimized
-	} = useBookmarks();
+	} = useBookmarkStore();
+	const { loadSettings: loadBackgroundSettings } = useBackgroundStore();
 
-	const handleRequestPermission = async () => {
-		await requestPermission();
-	};
-
-	const handleDeleteBookmark = async (id: string) => {
-		try {
-			await removeBookmark(id);
-		} catch (error) {
-			console.error('删除书签失败:', error);
-			alert('删除失败，请重试');
-		}
-	};
-
-	const handleUpdateBookmark = async (id: string, changes: any) => {
-		try {
-			await updateBookmark(id, changes);
-		} catch (error) {
-			console.error('更新书签失败:', error);
-			throw error;
-		}
-	};
+	useEffect(() => {
+		const init = async () => {
+			// 初始化背景设置
+			loadBackgroundSettings();
+			
+			const hasPermission = await checkPermission();
+			if (hasPermission) {
+				await loadBookmarks();
+			}
+		};
+		init();
+	}, [checkPermission, loadBookmarks, loadBackgroundSettings]);
 
 	return (
 		<div className='min-h-screen px-8'>
 			<div className='flex flex-col'>
 				<SearchSection />
-				<BookmarksContainer
-					bookmarks={bookmarks}
-					folders={folders}
-					loading={loading}
-					permissionState={permissionState}
-					onRequestPermission={handleRequestPermission}
-					onDeleteBookmark={handleDeleteBookmark}
-					onUpdateBookmark={handleUpdateBookmark}
-					onBookmarkMoved={loadBookmarks}
-					onBookmarkMoveOptimized={moveBookmarkOptimized}
-				/>
+				<BookmarksContainer />
 				<BackgroundSettings />
 				<BookmarkManager />
 			</div>

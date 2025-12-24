@@ -1,62 +1,15 @@
-import React, { useState } from 'react';
-import { Button, message } from 'antd';
+import React from 'react';
+import { Button } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
-import { useBookmarks } from '../../hooks/useBookmarks';
 import BookmarkManagementModal from './BookmarkManagementModal';
+import { useUIStore } from '../../store/uiStore';
 
 /**
  * 书签管理面板组件
  * 提供书签的批量管理和操作功能
  */
 const BookmarkManager: React.FC = () => {
-	const { bookmarks, removeBookmark, moveBookmark } = useBookmarks();
-	const [isModalVisible, setIsModalVisible] = useState(false);
-	const [selectedBookmarkIds, setSelectedBookmarkIds] = useState<string[]>(
-		[]
-	);
-
-	/**
-	 * 打开管理模态框
-	 */
-	const handleOpenModal = () => {
-		setIsModalVisible(true);
-	};
-
-	/**
-	 * 关闭管理模态框
-	 */
-	const handleCloseModal = () => {
-		setIsModalVisible(false);
-		setSelectedBookmarkIds([]);
-	};
-
-	/**
-	 * 处理书签选择变化
-	 * @param selectedIds 选中的书签ID数组
-	 */
-	const handleSelectionChange = (selectedIds: string[]) => {
-		setSelectedBookmarkIds(selectedIds);
-	};
-
-	/**
-	 * 批量删除选中的书签
-	 */
-	const handleBatchDelete = async () => {
-		if (selectedBookmarkIds.length === 0) {
-			message.warning('请选择要删除的书签');
-			return;
-		}
-
-		try {
-			for (const id of selectedBookmarkIds) {
-				await removeBookmark(id);
-			}
-			message.success(`成功删除 ${selectedBookmarkIds.length} 个书签`);
-			setSelectedBookmarkIds([]);
-		} catch (error) {
-			message.error('删除书签失败');
-		}
-	};
+	const { openBookmarkManager } = useUIStore();
 
 	return (
 		<div className='fixed right-5 bottom-20 z-50'>
@@ -66,19 +19,11 @@ const BookmarkManager: React.FC = () => {
 				type='primary'
 				shape='circle'
 				icon={<SettingOutlined />}
-				onClick={handleOpenModal}
+				onClick={openBookmarkManager}
 			/>
 
 			{/* 书签管理模态框 */}
-			<BookmarkManagementModal
-				visible={isModalVisible}
-				onClose={handleCloseModal}
-				bookmarks={bookmarks}
-				selectedBookmarkIds={selectedBookmarkIds}
-				onSelectionChange={handleSelectionChange}
-				onBatchDelete={handleBatchDelete}
-				onMoveBookmark={moveBookmark}
-			/>
+			<BookmarkManagementModal />
 		</div>
 	);
 };
