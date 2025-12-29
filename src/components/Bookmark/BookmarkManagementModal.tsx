@@ -11,13 +11,17 @@ import { useUIStore } from '../../store/uiStore';
  * 提供书签的表格展示、选择和批量操作功能
  */
 const BookmarkManagementModal: React.FC = () => {
-	const { bookmarks, folders, removeBookmark, moveBookmark } = useBookmarkStore();
-	const { bookmarkManager, closeBookmarkManager, setSelectedBookmarkIds } = useUIStore();
-	const { isOpen: visible, selectedIds: selectedBookmarkIds } = bookmarkManager;
+	const { bookmarks, folders, removeBookmark, moveBookmark } =
+		useBookmarkStore();
+	const {
+		isBookmarkManagerOpen,
+		closeBookmarkManager,
+		selectedBookmarkIds,
+		setSelectedBookmarkIds
+	} = useUIStore();
+	const visible = isBookmarkManagerOpen;
 
-	const [movingBookmarkId, setMovingBookmarkId] = useState<string | null>(
-		null
-	);
+	const [movingBookmarkId, setMovingBookmarkId] = useState<string | null>(null);
 
 	/**
 	 * 批量删除选中的书签
@@ -119,7 +123,7 @@ const BookmarkManagementModal: React.FC = () => {
 						} else {
 							setSelectedBookmarkIds(
 								selectedBookmarkIds.filter(
-									selectedId => selectedId !== id
+									(selectedId: string) => selectedId !== id
 								)
 							);
 						}
@@ -153,11 +157,7 @@ const BookmarkManagementModal: React.FC = () => {
 			key: 'url',
 			ellipsis: true,
 			render: (url: string) => (
-				<a
-					href={url}
-					target='_blank'
-					rel='noopener noreferrer'
-					title={url}>
+				<a href={url} target='_blank' rel='noopener noreferrer' title={url}>
 					{url}
 				</a>
 			)
@@ -177,18 +177,19 @@ const BookmarkManagementModal: React.FC = () => {
 				<Space size='small'>
 					<Dropdown
 						menu={{
-							items: folders.map(folder => ({
+							items: folders.map((folder: Bookmark) => ({
 								key: folder.id,
 								label: folder.title,
-								onClick: () =>
-									handleMoveToFolder(record.id, folder.id)
+								onClick: () => handleMoveToFolder(record.id, folder.id)
 							}))
 						}}
-						trigger={['click']}>
+						trigger={['click']}
+					>
 						<Button
 							size='small'
 							loading={movingBookmarkId === record.id}
-							disabled={movingBookmarkId !== null}>
+							disabled={movingBookmarkId !== null}
+						>
 							移动
 						</Button>
 					</Dropdown>
@@ -198,7 +199,7 @@ const BookmarkManagementModal: React.FC = () => {
 	];
 
 	// 批量操作下拉菜单项
-	const batchOperationItems = folders.map(folder => ({
+	const batchOperationItems = folders.map((folder: Bookmark) => ({
 		key: folder.id,
 		label: `移动到 ${folder.title}`,
 		onClick: () => handleBatchMove(folder.id)
@@ -210,18 +211,15 @@ const BookmarkManagementModal: React.FC = () => {
 			open={visible}
 			onCancel={closeBookmarkManager}
 			footer={[
-				<Button
-					key='close'
-					onClick={closeBookmarkManager}>
+				<Button key='close' onClick={closeBookmarkManager}>
 					关闭
 				</Button>,
 				<Dropdown
 					key='move'
 					menu={{ items: batchOperationItems }}
-					disabled={selectedBookmarkIds.length === 0}>
-					<Button
-						type='primary'
-						disabled={selectedBookmarkIds.length === 0}>
+					disabled={selectedBookmarkIds.length === 0}
+				>
+					<Button type='primary' disabled={selectedBookmarkIds.length === 0}>
 						批量移动
 					</Button>
 				</Dropdown>,
@@ -231,13 +229,15 @@ const BookmarkManagementModal: React.FC = () => {
 					danger
 					icon={<DeleteOutlined />}
 					onClick={handleBatchDelete}
-					disabled={selectedBookmarkIds.length === 0}>
+					disabled={selectedBookmarkIds.length === 0}
+				>
 					批量删除
 				</Button>
 			]}
 			width='70%'
 			style={{ height: '70vh' }}
-			bodyStyle={{ padding: 0 }}>
+			bodyStyle={{ padding: 0 }}
+		>
 			<div className='p-6'>
 				<div className='mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 font-medium'>
 					<span>已选择 {selectedBookmarkIds.length} 个书签</span>

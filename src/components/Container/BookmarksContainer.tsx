@@ -6,19 +6,15 @@ import { useBookmarkStore } from '../../store/bookmarkStore';
 import { useUIStore } from '../../store/uiStore';
 
 export const BookmarksContainer: React.FC = () => {
-	const {
-		folders,
-		loading,
-		permissionState,
-		requestPermission,
-	} = useBookmarkStore();
+	const { folders, loading, permissionState, requestPermission } =
+		useBookmarkStore();
 
-	const { editModal, closeEditModal } = useUIStore();
+	const { isEditModalOpen, editingBookmark, closeEditModal } = useUIStore();
 	const { updateBookmark } = useBookmarkStore();
 
 	const handleSave = async (changes: Partial<Bookmark>) => {
-		if (editModal.bookmark) {
-			await updateBookmark(editModal.bookmark.id, changes);
+		if (editingBookmark) {
+			await updateBookmark(editingBookmark.id, changes);
 			closeEditModal();
 		}
 	};
@@ -42,10 +38,9 @@ export const BookmarksContainer: React.FC = () => {
 				<button
 					className='bg-white/20 border-2 border-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-300 backdrop-blur-md hover:bg-white/30 hover:border-white/50 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed'
 					onClick={() => requestPermission()}
-					disabled={permissionState.isRequesting}>
-					{permissionState.isRequesting
-						? '请求中...'
-						: '授权访问书签'}
+					disabled={permissionState.isRequesting}
+				>
+					{permissionState.isRequesting ? '请求中...' : '授权访问书签'}
 				</button>
 			</div>
 		);
@@ -70,18 +65,15 @@ export const BookmarksContainer: React.FC = () => {
 			<main className='w-full'>
 				{/* 显示文件夹结构，文件夹为一级分类 */}
 				<div className='mb-1.5'>
-					{folders.map(folder => (
-						<BookmarkFolder
-							key={folder.id}
-							folder={folder}
-						/>
+					{folders.map((folder: Bookmark) => (
+						<BookmarkFolder key={folder.id} folder={folder} />
 					))}
 				</div>
 			</main>
 
 			<EditModal
-				isOpen={editModal.isOpen}
-				bookmark={editModal.bookmark}
+				isOpen={isEditModalOpen}
+				bookmark={editingBookmark}
 				onSave={handleSave}
 				onCancel={closeEditModal}
 			/>
