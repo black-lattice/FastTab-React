@@ -1,101 +1,107 @@
-import React, { useState } from 'react';
-import { Modal, Table, Space, Button, Dropdown, message } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useMemo } from 'react';
+import { Modal, Table, Space, Button, Dropdown, message, Input, Tag } from 'antd';
+import { DeleteOutlined, SearchOutlined, FolderOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { Bookmark } from '../../types';
 import { useBookmarkStore } from '../../store/bookmarkStore';
 import { useUIStore } from '../../store/uiStore';
+import { useFavicon } from '../../hooks/useFavicon';
 
 /**
- * 书签管理模态框组件
- * 提供书签的表格展示、选择和批量操作功能
+ * 内部图标组件，用于在表格中展示
  */
+const TableFavicon: React.FC<{ url: string; title: string }> = ({ url, title }) => {
+	const { faviconUrl } = useFavicon(url);
+	const firstChar = title?.trim().charAt(0).toUpperCase() || '🔗';
+
+	if (!faviconUrl) {
+		return (
+			<div className="w-4 h-4 flex items-center justify-center bg-gray-200 rounded text-[10px] text-gray-500 font-bold">
+				{firstChar}
+			</div>
+		);
+	}
+
+	return (
+		<img
+			src={faviconUrl}
+			alt=""
+			className="w-4 h-4 rounded object-contain"
+		/>
+	);
+};
+
 const BookmarkManagementModal: React.FC = () => {
-	const { bookmarks, folders, removeBookmark, moveBookmark } =
-		useBookmarkStore();
+	const { bookmarks, folders, removeBookmark, moveBookmark } = useBookmarkStore();
 	const {
 		isBookmarkManagerOpen,
 		closeBookmarkManager,
 		selectedBookmarkIds,
 		setSelectedBookmarkIds
 	} = useUIStore();
-	const visible = isBookmarkManagerOpen;
 
-	const [movingBookmarkId, setMovingBookmarkId] = useState<string | null>(null);
+	const [searchText, setSearchText] = useState('');
 
-	/**
-	 * 批量删除选中的书签
-	 */
+	// 搜索过滤
+	const filteredBookmarks = useMemo(() => {
+		if (!searchText) return bookmarks;
+		const lowerSearch = searchText.toLowerCase();
+		return bookmarks.filter(b => 
+			b.title.toLowerCase().includes(lowerSearch) || 
+			b.url.toLowerCase().includes(lowerSearch)
+		);
+	}, [bookmarks, searchText]);
+
+	// 文件夹映射，用于显示“所在文件夹”
+	const folderMap = useMemo(() => {
+		const map: Record<string, string> = {};
+		folders.forEach(f => {
+			map[f.id] = f.title;
+			// 递归处理子文件夹（如果存在）
+			const traverse = (nodes: Bookmark[]) => {
+				nodes.forEach(n => {
+					if (!n.url) {
+						map[n.id] = n.title;
+						if (n.children) traverse(n.children);
+					}
+				});
+			};
+			if (f.children) traverse(f.children);
+		});
+		return map;
+	}, [folders]);
+
 	const handleBatchDelete = async () => {
-		if (selectedBookmarkIds.length === 0) {
-			message.warning('请选择要删除的书签');
-			return;
-		}
-
-		try {
-			for (const id of selectedBookmarkIds) {
-				await removeBookmark(id);
+		Modal.confirm({
+			title: '确认删除',
+			content: `确定要删除选中的 ${selectedBookmarkIds.length} 个书签吗？`,
+			okText: '确定',
+			okType: 'danger',
+			cancelText: '取消',
+			onOk: async () => {
+				try {
+					for (const id of selectedBookmarkIds) {
+						await removeBookmark(id);
+					}
+					message.success(`成功删除 ${selectedBookmarkIds.length} 个书签`);
+					setSelectedBookmarkIds([]);
+				} catch (error) {
+					message.error('部分书签删除失败');
+				}
 			}
-			message.success(`成功删除 ${selectedBookmarkIds.length} 个书签`);
-			setSelectedBookmarkIds([]);
-		} catch (error) {
-			message.error('删除书签失败');
-		}
+		});
 	};
 
-	/**
-	 * 格式化日期显示
-	 * @param date 日期字符串或数字
-	 * @returns 格式化后的日期字符串
-	 */
-	const formatDate = (date: string | number | undefined): string => {
-		if (!date) return '-';
-		return new Date(date)
-			.toLocaleString('zh-CN', {
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit'
-			})
-			.replace(/\//g, '-');
-	};
-
-	/**
-	 * 处理行选择变化
-	 * @param selectedRowKeys 选中的行key数组
-	 */
-	const handleRowSelectionChange = (selectedRowKeys: React.Key[]) => {
-		setSelectedBookmarkIds(selectedRowKeys as string[]);
-	};
-
-	/**
-	 * 移动书签到指定文件夹
-	 * @param bookmarkId 书签ID
-	 * @param folderId 目标文件夹ID
-	 */
 	const handleMoveToFolder = async (bookmarkId: string, folderId: string) => {
 		try {
-			setMovingBookmarkId(bookmarkId);
 			await moveBookmark(bookmarkId, { parentId: folderId });
 			message.success('移动成功');
 		} catch (error) {
 			message.error('移动失败');
-		} finally {
-			setMovingBookmarkId(null);
 		}
 	};
 
-	/**
-	 * 批量移动选中的书签
-	 * @param folderId 目标文件夹ID
-	 */
 	const handleBatchMove = async (folderId: string) => {
-		if (selectedBookmarkIds.length === 0) {
-			message.warning('请选择要移动的书签');
-			return;
-		}
-
 		try {
 			for (const id of selectedBookmarkIds) {
 				await moveBookmark(id, { parentId: folderId });
@@ -107,156 +113,145 @@ const BookmarkManagementModal: React.FC = () => {
 		}
 	};
 
-	// 表格列配置
 	const columns: ColumnsType<Bookmark> = [
 		{
-			title: '选择',
-			dataIndex: 'id',
-			width: 60,
-			render: (id: string) => (
-				<input
-					type='checkbox'
-					checked={selectedBookmarkIds.includes(id)}
-					onChange={e => {
-						if (e.target.checked) {
-							setSelectedBookmarkIds([...selectedBookmarkIds, id]);
-						} else {
-							setSelectedBookmarkIds(
-								selectedBookmarkIds.filter(
-									(selectedId: string) => selectedId !== id
-								)
-							);
-						}
-					}}
-				/>
+			title: '书签',
+			key: 'bookmark',
+			width: '40%',
+			render: (_, record) => (
+				<Space>
+					<TableFavicon url={record.url} title={record.title} />
+					<div className="flex flex-col overflow-hidden">
+						<span className="font-medium truncate block" title={record.title}>
+							{record.title}
+						</span>
+						<a 
+							href={record.url} 
+							target="_blank" 
+							rel="noopener noreferrer" 
+							className="text-xs text-gray-400 truncate hover:text-blue-500"
+							onClick={e => e.stopPropagation()}
+						>
+							{record.url}
+						</a>
+					</div>
+				</Space>
 			)
 		},
 		{
-			title: '图标',
-			dataIndex: 'url',
-			width: 60,
-			render: (url: string) => (
-				<img
-					src={`https://www.google.com/s2/favicons?domain=${url}&sz=32`}
-					alt='favicon'
-					width={16}
-					height={16}
-					style={{ marginRight: 8 }}
-				/>
+			title: '所在文件夹',
+			dataIndex: 'parentId',
+			key: 'folder',
+			width: 150,
+			render: (parentId) => (
+				<Tag icon={<FolderOutlined />} color="blue">
+					{folderMap[parentId] || '书签栏'}
+				</Tag>
 			)
 		},
 		{
-			title: '标题',
-			dataIndex: 'title',
-			key: 'title',
-			ellipsis: true
-		},
-		{
-			title: 'URL',
-			dataIndex: 'url',
-			key: 'url',
-			ellipsis: true,
-			render: (url: string) => (
-				<a href={url} target='_blank' rel='noopener noreferrer' title={url}>
-					{url}
-				</a>
-			)
-		},
-		{
-			title: '收藏日期',
+			title: '添加日期',
 			dataIndex: 'dateAdded',
 			key: 'dateAdded',
-			width: 150,
-			render: (dateAdded: number) => formatDate(dateAdded)
+			width: 120,
+			sorter: (a, b) => (a.dateAdded || 0) - (b.dateAdded || 0),
+			render: (date) => date ? new Date(date).toLocaleDateString() : '-'
 		},
 		{
 			title: '操作',
 			key: 'action',
-			width: 120,
+			width: 100,
+			fixed: 'right',
 			render: (_, record) => (
-				<Space size='small'>
-					<Dropdown
-						menu={{
-							items: folders.map((folder: Bookmark) => ({
-								key: folder.id,
-								label: folder.title,
-								onClick: () => handleMoveToFolder(record.id, folder.id)
-							}))
-						}}
-						trigger={['click']}
-					>
-						<Button
-							size='small'
-							loading={movingBookmarkId === record.id}
-							disabled={movingBookmarkId !== null}
-						>
-							移动
-						</Button>
-					</Dropdown>
-				</Space>
+				<Dropdown
+					menu={{
+						items: folders.map(f => ({
+							key: f.id,
+							label: f.title,
+							icon: <FolderOutlined />,
+							onClick: () => handleMoveToFolder(record.id, f.id)
+						}))
+					}}
+					trigger={['click']}
+				>
+					<Button size="small" type="link">移动</Button>
+				</Dropdown>
 			)
 		}
 	];
 
-	// 批量操作下拉菜单项
-	const batchOperationItems = folders.map((folder: Bookmark) => ({
-		key: folder.id,
-		label: `移动到 ${folder.title}`,
-		onClick: () => handleBatchMove(folder.id)
+	const batchMoveItems = folders.map(f => ({
+		key: f.id,
+		label: f.title,
+		icon: <FolderOutlined />,
+		onClick: () => handleBatchMove(f.id)
 	}));
 
 	return (
 		<Modal
-			title='书签管理'
-			open={visible}
-			onCancel={closeBookmarkManager}
-			footer={[
-				<Button key='close' onClick={closeBookmarkManager}>
-					关闭
-				</Button>,
-				<Dropdown
-					key='move'
-					menu={{ items: batchOperationItems }}
-					disabled={selectedBookmarkIds.length === 0}
-				>
-					<Button type='primary' disabled={selectedBookmarkIds.length === 0}>
-						批量移动
-					</Button>
-				</Dropdown>,
-				<Button
-					key='delete'
-					type='primary'
-					danger
-					icon={<DeleteOutlined />}
-					onClick={handleBatchDelete}
-					disabled={selectedBookmarkIds.length === 0}
-				>
-					批量删除
-				</Button>
-			]}
-			width='70%'
-			style={{ height: '70vh' }}
-			bodyStyle={{ padding: 0 }}
-		>
-			<div className='p-6'>
-				<div className='mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 font-medium'>
-					<span>已选择 {selectedBookmarkIds.length} 个书签</span>
+			title={
+				<div className="flex items-center justify-between pr-8">
+					<span>书签管理</span>
+					<Input
+						placeholder="搜索书签标题或 URL..."
+						prefix={<SearchOutlined className="text-gray-400" />}
+						variant="filled"
+						className="w-64 font-normal"
+						onChange={e => setSearchText(e.target.value)}
+						allowClear
+					/>
 				</div>
-
+			}
+			open={isBookmarkManagerOpen}
+			onCancel={closeBookmarkManager}
+			width={900}
+			centered
+			footer={
+				<div className="flex items-center justify-between w-full px-2">
+					<div className="text-gray-500 text-sm">
+						{selectedBookmarkIds.length > 0 && (
+							<span>已选择 <strong className="text-blue-600">{selectedBookmarkIds.length}</strong> 项</span>
+						)}
+					</div>
+					<Space>
+						<Button onClick={closeBookmarkManager}>取消</Button>
+						<Dropdown
+							menu={{ items: batchMoveItems }}
+							disabled={selectedBookmarkIds.length === 0}
+						>
+							<Button disabled={selectedBookmarkIds.length === 0}>
+								批量移动
+							</Button>
+						</Dropdown>
+						<Button
+							type="primary"
+							danger
+							icon={<DeleteOutlined />}
+							onClick={handleBatchDelete}
+							disabled={selectedBookmarkIds.length === 0}
+						>
+							批量删除
+						</Button>
+					</Space>
+				</div>
+			}
+		>
+			<div className="py-2">
 				<Table
 					columns={columns}
-					dataSource={bookmarks}
-					rowKey='id'
-					pagination={false}
-					scroll={{ y: 'calc(50vh - 150px)' }}
+					dataSource={filteredBookmarks}
+					rowKey="id"
+					size="middle"
+					pagination={{
+						pageSize: 50,
+						showSizeChanger: true,
+						showTotal: (total) => `共 ${total} 条书签`,
+						size: 'small'
+					}}
+					scroll={{ y: 450 }}
 					rowSelection={{
 						selectedRowKeys: selectedBookmarkIds,
-						onChange: handleRowSelectionChange,
-						selections: [
-							Table.SELECTION_ALL,
-							Table.SELECTION_INVERT,
-							Table.SELECTION_NONE
-						]
+						onChange: (keys) => setSelectedBookmarkIds(keys as string[]),
 					}}
 				/>
 			</div>

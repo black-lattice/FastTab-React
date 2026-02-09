@@ -44,7 +44,8 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 	};
 
 	// 使用 useFavicon hook 获取图标
-	const { faviconUrl, isLoading: faviconLoading } = useFavicon(bookmark.url);
+	const { faviconUrl } = useFavicon(bookmark.url);
+	const [imageLoaded, setImageLoaded] = useState(false);
 
 	// 处理书签标题，如果包含 '-' 则只显示 '-' 之前的内容
 	const getDisplayTitle = (title: string) => {
@@ -61,6 +62,8 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 		const displayTitle = getDisplayTitle(title);
 		return displayTitle?.trim().charAt(0).toUpperCase() || '🔗';
 	};
+
+	const showFallback = !faviconUrl || !imageLoaded;
 
 	return (
 		<div
@@ -96,20 +99,23 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 					className='flex-shrink-0 relative'
 					style={{ width: '60px', height: '60px' }}>
 					{/* 毛玻璃背景 - 只在显示备选字母时显示 */}
-					{(!faviconUrl || faviconLoading) && (
+					{showFallback && (
 						<div
 							className='absolute inset-0 backdrop-blur-sm bg-white/10 border border-white/20 rounded'
 							style={{ width: '60px', height: '60px' }}></div>
 					)}
-					<img
-						className='rounded relative z-10'
-						style={{ width: '60px', height: '60px' }}
-						src={faviconUrl}
-						alt={bookmark.title}
-					/>
-					{(!faviconUrl || faviconLoading) && (
+					{faviconUrl && (
+						<img
+							className={`rounded relative z-10 transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+							style={{ width: '60px', height: '60px' }}
+							src={faviconUrl}
+							alt={bookmark.title}
+							onLoad={() => setImageLoaded(true)}
+						/>
+					)}
+					{showFallback && (
 						<div
-							className='flex items-center justify-center text-white text-lg font-medium relative z-10'
+							className='flex items-center justify-center text-white text-lg font-medium absolute inset-0 z-10'
 							style={{ width: '60px', height: '60px' }}>
 							{getFirstChar(bookmark.title)}
 						</div>
@@ -132,7 +138,7 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 					)}
 				</div>
 				<div
-					className='text-white text-sm font-medium leading-tight break-words overflow-hidden text-center h-8 flex items-center justify-center mt-2'
+					className='text-white text-xs font-medium leading-tight break-words overflow-hidden text-center h-8 flex items-center justify-center mt-2'
 					style={{
 						display: '-webkit-box',
 						WebkitLineClamp: 2,

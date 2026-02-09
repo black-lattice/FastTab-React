@@ -1,290 +1,199 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 // 缓存配置
-const CACHE_KEY = 'favicon_cache';
-const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24小时
-const MAX_CACHE_SIZE = 500; // 最多缓存500个图标
+const CACHE_KEY = 'favicon_cache_v3';
+const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7天
+const MAX_CACHE_SIZE = 1000;
 
-// 图标服务配置 - 按优先级排序
-const FAVICON_SERVICES = [
-	{
-		name: 'duckduckgo',
-		url: (hostname: string) =>
-			`https://icons.duckduckgo.com/ip3/${hostname}.ico`,
-		timeout: 3000
-	},
-	{
-		name: 'google',
-		url: (hostname: string) =>
-			`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`,
-		timeout: 3000
-	},
-	{
-		name: 'chrome',
-		url: (url: string) => `chrome://favicon/${url}`,
-		timeout: 1000
-	}
-];
-
-// 缓存数据结构
 interface CacheEntry {
-	faviconUrl: string;
+	data: string; // Base64 或 URL
 	timestamp: number;
 	expiry: number;
 }
 
-// 缓存管理函数
+// 缓存管理
 const cacheManager = {
-	// 读取缓存
-	getCache: (hostname: string): string | null => {
+	async get(key: string): Promise<string | null> {
 		try {
-			const cached = localStorage.getItem(CACHE_KEY);
-			if (!cached) return null;
-
-			const cacheData: Record<string, CacheEntry> = JSON.parse(cached);
-			const entry = cacheData[hostname];
-
-			if (!entry) return null;
-
-			// 检查是否过期
-			if (Date.now() > entry.expiry) {
-				// 过期了，删除缓存
-				delete cacheData[hostname];
-				localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+			if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+				const result = await chrome.storage.local.get(CACHE_KEY);
+				const cache = result[CACHE_KEY] || {};
+				const entry = cache[key] as CacheEntry;
+				if (entry && Date.now() < entry.expiry) return entry.data;
+				return null;
+			} else {
+				const local = localStorage.getItem(CACHE_KEY);
+				if (!local) return null;
+				const cache = JSON.parse(local);
+				const entry = cache[key];
+				if (entry && Date.now() < entry.expiry) return entry.data;
 				return null;
 			}
-
-			return entry.faviconUrl;
-		} catch (error) {
-			console.warn('读取缓存失败:', error);
+		} catch (e) {
 			return null;
 		}
 	},
 
-	// 设置缓存
-	setCache: (hostname: string, faviconUrl: string): void => {
+	async set(key: string, data: string) {
 		try {
-			const cached = localStorage.getItem(CACHE_KEY);
-			const cacheData: Record<string, CacheEntry> = cached
-				? JSON.parse(cached)
-				: {};
-
-			// 检查缓存大小，如果超过限制则清理最旧的缓存
-			const cacheKeys = Object.keys(cacheData);
-			if (cacheKeys.length >= MAX_CACHE_SIZE) {
-				// 找到最旧的缓存条目
-				let oldestKey = cacheKeys[0];
-				let oldestTime = cacheData[oldestKey].timestamp;
-
-				for (const key of cacheKeys) {
-					if (cacheData[key].timestamp < oldestTime) {
-						oldestKey = key;
-						oldestTime = cacheData[key].timestamp;
-					}
+			if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+				const result = await chrome.storage.local.get(CACHE_KEY);
+				const cache = result[CACHE_KEY] || {};
+				
+				const keys = Object.keys(cache);
+				if (keys.length >= MAX_CACHE_SIZE) {
+					// 删除最早的
+					delete cache[keys[0]];
 				}
 
-				// 删除最旧的缓存
-				delete cacheData[oldestKey];
+				cache[key] = {
+					data,
+					timestamp: Date.now(),
+					expiry: Date.now() + CACHE_EXPIRY
+				};
+				await chrome.storage.local.set({ [CACHE_KEY]: cache });
+			} else {
+				const local = localStorage.getItem(CACHE_KEY);
+				const cache = local ? JSON.parse(local) : {};
+				cache[key] = {
+					data,
+					timestamp: Date.now(),
+					expiry: Date.now() + CACHE_EXPIRY
+				};
+				localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
 			}
-
-			// 设置新缓存
-			cacheData[hostname] = {
-				faviconUrl,
-				timestamp: Date.now(),
-				expiry: Date.now() + CACHE_EXPIRY
-			};
-
-			localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-		} catch (error) {
-			console.warn('设置缓存失败:', error);
-		}
-	},
-
-	// 清理过期缓存
-	cleanExpiredCache: (): void => {
-		try {
-			const cached = localStorage.getItem(CACHE_KEY);
-			if (!cached) return;
-
-			const cacheData: Record<string, CacheEntry> = JSON.parse(cached);
-			const now = Date.now();
-			let hasChanges = false;
-
-			for (const [hostname, entry] of Object.entries(cacheData)) {
-				if (now > entry.expiry) {
-					delete cacheData[hostname];
-					hasChanges = true;
-				}
-			}
-
-			if (hasChanges) {
-				localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-			}
-		} catch (error) {
-			console.warn('清理缓存失败:', error);
+		} catch (e) {
+			console.warn('缓存设置失败:', e);
 		}
 	}
 };
 
-// 页面加载时清理过期缓存
-if (typeof window !== 'undefined') {
-	cacheManager.cleanExpiredCache();
-}
+// 验证图片是否有效
+const validateImage = (url: string): Promise<boolean> => {
+	return new Promise((resolve) => {
+		const img = new Image();
+		img.onload = () => resolve(true);
+		img.onerror = () => resolve(false);
+		img.src = url;
+		// 3秒超时
+		setTimeout(() => resolve(false), 3000);
+	});
+};
+
+// 全局请求队列，避免同一域名多次请求
+const pendingRequests = new Map<string, Promise<string | null>>();
+
+// 将 URL 转为 Base64
+const fetchAsBase64 = async (url: string): Promise<string> => {
+	const response = await fetch(url);
+	if (!response.ok) throw new Error('Fetch failed');
+	const blob = await response.blob();
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onloadend = () => resolve(reader.result as string);
+		reader.onerror = reject;
+		reader.readAsDataURL(blob);
+	});
+};
 
 export const useFavicon = (url: string) => {
 	const [faviconUrl, setFaviconUrl] = useState<string>('');
 	const [isLoading, setIsLoading] = useState<boolean>(false);
-
 	const mountedRef = useRef<boolean>(true);
-	const timeoutRef = useRef<number>(0);
+	const lastUrlRef = useRef<string>('');
 
-	// 清理函数
-	const cleanup = useCallback(() => {
-		if (timeoutRef.current) {
-			clearTimeout(timeoutRef.current);
-			timeoutRef.current = 0;
-		}
-	}, []);
-
-	// 检查是否为有效的URL
-	const isValidUrl = useCallback((url: string): boolean => {
+	const getHostname = (urlStr: string) => {
 		try {
-			new URL(url);
-			return true;
-		} catch {
-			return false;
+			return new URL(urlStr).hostname;
+		} catch (e) {
+			return urlStr;
 		}
-	}, []);
+	};
 
-	// 尝试从单个服务获取图标
-	const tryService = useCallback(
-		(
-			service: (typeof FAVICON_SERVICES)[0],
-			url: string,
-			hostname?: string
-		): Promise<string | null> => {
-			return new Promise(resolve => {
-				const img = new Image();
-				let timeoutId: number;
-
-				const cleanup = () => {
-					img.onload = null;
-					img.onerror = null;
-					if (timeoutId) clearTimeout(timeoutId);
-				};
-
-				img.onload = () => {
-					cleanup();
-					// 图片加载成功，返回该服务的图标URL
-					resolve(service.url(hostname || url));
-				};
-
-				img.onerror = () => {
-					cleanup();
-					resolve(null); // 加载失败，尝试下一个服务
-				};
-
-				// 设置超时
-				timeoutId = window.setTimeout(() => {
-					cleanup();
-					resolve(null); // 超时，尝试下一个服务
-				}, service.timeout);
-
-				// 加载图片（img标签天然支持跨域）
-				img.src = service.url(hostname || url);
-			});
-		},
-		[]
-	);
-
-	// 依次尝试所有服务获取图标
-	const fetchFavicon = useCallback(
-		async (url: string, hostname: string): Promise<string | null> => {
-			// 首先检查缓存
-			const cachedUrl = cacheManager.getCache(hostname);
-			if (cachedUrl) {
-				console.log(`使用缓存的图标: ${hostname}`);
-				return cachedUrl;
+	const fetchIconWaterfall = async (targetUrl: string, hostname: string): Promise<string | null> => {
+		// 策略 A: Chrome 内部 API
+		try {
+			const chromeFaviconUrl = `/_favicon/?pageUrl=${encodeURIComponent(targetUrl)}&size=64`;
+			const base64 = await fetchAsBase64(chromeFaviconUrl);
+			if (base64.length > 200) {
+				await cacheManager.set(hostname, base64);
+				return base64;
 			}
+		} catch (e) {}
 
-			// 缓存中没有，依次尝试所有图标服务
-			for (const service of FAVICON_SERVICES) {
-				try {
-					const iconUrl = await tryService(service, url, hostname);
-					if (iconUrl) {
-						// 获取成功，设置缓存
-						cacheManager.setCache(hostname, iconUrl);
-						console.log(
-							`获取图标成功并缓存: ${hostname} - ${service.name}`
-						);
-						return iconUrl;
-					}
-				} catch (serviceError) {
-					console.warn(
-						`图标服务 ${service.name} 失败:`,
-						serviceError
-					);
-					continue;
-				}
+		// 策略 B: Google Favicon API
+		const googleUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+		if (await validateImage(googleUrl)) {
+			await cacheManager.set(hostname, googleUrl);
+			return googleUrl;
+		}
+
+		// 策略 C: DuckDuckGo API
+		const ddgUrl = `https://icons.duckduckgo.com/ip3/${hostname}.ico`;
+		if (await validateImage(ddgUrl)) {
+			await cacheManager.set(hostname, ddgUrl);
+			return ddgUrl;
+		}
+
+		// 策略 D: 直接尝试 /favicon.ico
+		try {
+			const directUrl = `${new URL(targetUrl).origin}/favicon.ico`;
+			if (await validateImage(directUrl)) {
+				await cacheManager.set(hostname, directUrl);
+				return directUrl;
 			}
+		} catch (e) {}
 
-			// 所有服务都失败，返回null让组件显示默认字母
-			console.log(`所有图标服务都失败: ${hostname}`);
-			return null;
-		},
-		[tryService]
-	);
+		return null;
+	};
 
-	// 主函数
-	const loadFavicon = useCallback(() => {
-		if (!mountedRef.current) return;
-
-		if (!isValidUrl(url)) {
-			setFaviconUrl('');
-			setIsLoading(false);
+	const loadFavicon = useCallback(async (targetUrl: string) => {
+		if (!targetUrl || lastUrlRef.current === targetUrl) return;
+		lastUrlRef.current = targetUrl;
+		
+		const hostname = getHostname(targetUrl);
+		
+		// 1. 检查缓存
+		const cached = await cacheManager.get(hostname);
+		if (cached) {
+			if (mountedRef.current) setFaviconUrl(cached);
 			return;
 		}
 
-		const loadFaviconAsync = async () => {
-			try {
-				const hostname = new URL(url).hostname;
-				setIsLoading(true);
-
-				const result = await fetchFavicon(url, hostname);
-
-				if (mountedRef.current) {
-					setFaviconUrl(result || '');
-				}
-			} catch (err) {
-				if (mountedRef.current) {
-					console.error('获取图标失败:', err);
-					setFaviconUrl('');
-				}
-			} finally {
-				if (mountedRef.current) {
-					setIsLoading(false);
-				}
+		// 2. 检查是否有正在进行的请求
+		if (pendingRequests.has(hostname)) {
+			if (mountedRef.current) setIsLoading(true);
+			const result = await pendingRequests.get(hostname);
+			if (mountedRef.current) {
+				setFaviconUrl(result || '');
+				setIsLoading(false);
 			}
-		};
+			return;
+		}
 
-		// 延迟执行，避免频繁调用
-		timeoutRef.current = window.setTimeout(loadFaviconAsync, 100);
-	}, [url, isValidUrl, fetchFavicon]);
+		if (mountedRef.current) setIsLoading(true);
 
-	// 组件卸载时清理
+		// 3. 瀑布式尝试获取图标，并加入队列
+		const fetchPromise = fetchIconWaterfall(targetUrl, hostname);
+		pendingRequests.set(hostname, fetchPromise);
+
+		try {
+			const result = await fetchPromise;
+			if (mountedRef.current) setFaviconUrl(result || '');
+		} finally {
+			pendingRequests.delete(hostname);
+			if (mountedRef.current) setIsLoading(false);
+		}
+	}, []);
+
 	useEffect(() => {
 		mountedRef.current = true;
+		if (url) {
+			loadFavicon(url);
+		}
 		return () => {
 			mountedRef.current = false;
-			cleanup();
 		};
-	}, [cleanup]);
-
-	// URL变化时重新加载
-	useEffect(() => {
-		if (url) {
-			loadFavicon();
-		}
 	}, [url, loadFavicon]);
 
 	return {
