@@ -12,20 +12,20 @@ interface SearchEngine {
 const DEFAULT_ENGINES: SearchEngine[] = [
 	{
 		value: 'google',
-		label: '🔍 Google',
-		icon: '🔍',
+		label: 'Google',
+		icon: 'G',
 		searchUrl: 'https://www.google.com/search?q='
 	},
 	{
 		value: 'bing',
-		label: '🔍 Bing',
-		icon: '🔍',
+		label: 'Bing',
+		icon: 'B',
 		searchUrl: 'https://www.bing.com/search?q='
 	},
 	{
 		value: 'baidu',
-		label: '🔍 百度',
-		icon: '🔍',
+		label: '百度',
+		icon: '百',
 		searchUrl: 'https://www.baidu.com/s?wd='
 	}
 ];

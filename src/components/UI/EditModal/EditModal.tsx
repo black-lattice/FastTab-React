@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Bookmark } from '../../../types';
 
 interface EditModalProps {
@@ -55,21 +56,26 @@ export const EditModal: React.FC<EditModalProps> = ({
 		return null;
 	}
 
-	return (
+	return createPortal(
 		<div
-			className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'
+			className='bookmark-edit-modal-mask fixed inset-0 flex items-center justify-center p-4'
 			onClick={onCancel}>
 			<div
-				className='bg-white rounded-xl shadow-2xl w-full max-w-md p-6'
+				className='theme-panel bookmark-edit-modal-panel w-full max-w-md rounded-xl p-6 shadow-2xl'
+				role='dialog'
+				aria-modal='true'
+				aria-labelledby='bookmark-edit-modal-title'
 				onClick={e => e.stopPropagation()}>
-				<h3 className='text-xl font-semibold text-gray-900 mb-4'>
+				<h3
+					id='bookmark-edit-modal-title'
+					className='text-xl font-semibold text-[var(--text-primary)] mb-4'>
 					编辑书签
 				</h3>
 				<div className='space-y-4'>
 					<div className='flex flex-col'>
 						<label
 							htmlFor='editTitle'
-							className='text-sm font-medium text-gray-700 mb-1'>
+							className='text-sm font-medium text-[var(--text-secondary)] mb-1'>
 							标题
 						</label>
 						<input
@@ -80,13 +86,13 @@ export const EditModal: React.FC<EditModalProps> = ({
 							onKeyPress={handleKeyPress}
 							placeholder='书签标题'
 							autoFocus
-							className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-gray-900'
+							className='theme-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors'
 						/>
 					</div>
 					<div className='flex flex-col'>
 						<label
 							htmlFor='editUrl'
-							className='text-sm font-medium text-gray-700 mb-1'>
+							className='text-sm font-medium text-[var(--text-secondary)] mb-1'>
 							网址
 						</label>
 						<input
@@ -96,7 +102,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 							onChange={e => setUrl(e.target.value)}
 							onKeyPress={handleKeyPress}
 							placeholder='https://example.com'
-							className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-gray-900'
+							className='theme-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors'
 						/>
 					</div>
 				</div>
@@ -107,12 +113,13 @@ export const EditModal: React.FC<EditModalProps> = ({
 						保存
 					</button>
 					<button
-						className='flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium'
+						className='theme-secondary-button flex-1 py-2 px-4 rounded-lg transition-colors font-medium'
 						onClick={onCancel}>
 						取消
 					</button>
 				</div>
 			</div>
-		</div>
+		</div>,
+		document.body
 	);
 };

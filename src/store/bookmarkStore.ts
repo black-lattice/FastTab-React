@@ -4,11 +4,14 @@ import { Bookmark, PermissionState } from '../types';
 interface BookmarkState {
 	bookmarks: Bookmark[];
 	folders: Bookmark[];
+	externalBookmarkIds: string[];
 	loading: boolean;
 	permissionState: PermissionState;
 	checkPermission: () => Promise<boolean>;
 	requestPermission: () => Promise<boolean>;
 	loadBookmarks: () => Promise<void>;
+	loadDisplaySettings: () => Promise<void>;
+	setBookmarkExternal: (id: string, isExternal: boolean) => Promise<void>;
 	createBookmark: (
 		bookmark: Omit<Bookmark, 'id' | 'dateAdded'>
 	) => Promise<chrome.bookmarks.BookmarkTreeNode>;
@@ -24,6 +27,7 @@ interface BookmarkState {
 export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 	bookmarks: [],
 	folders: [],
+	externalBookmarkIds: [],
 	loading: true,
 	permissionState: {
 		hasPermission: false,
@@ -59,6 +63,35 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 			console.error('请求权限失败:', error);
 			set({ permissionState: { hasPermission: false, isRequesting: false } });
 			return false;
+		}
+	},
+
+	loadDisplaySettings: async () => {
+		try {
+			const result = await chrome.storage.local.get('externalBookmarkIds');
+			set({
+				externalBookmarkIds: Array.isArray(result.externalBookmarkIds)
+					? result.externalBookmarkIds
+					: []
+			});
+		} catch (error) {
+			console.error('加载书签显示设置失败:', error);
+		}
+	},
+
+	setBookmarkExternal: async (id: string, isExternal: boolean) => {
+		const currentIds = get().externalBookmarkIds;
+		const externalBookmarkIds = isExternal
+			? Array.from(new Set([...currentIds, id]))
+			: currentIds.filter(bookmarkId => bookmarkId !== id);
+
+		set({ externalBookmarkIds });
+		try {
+			await chrome.storage.local.set({ externalBookmarkIds });
+		} catch (error) {
+			set({ externalBookmarkIds: currentIds });
+			console.error('保存书签显示设置失败:', error);
+			throw error;
 		}
 	},
 

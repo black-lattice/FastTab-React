@@ -39,7 +39,7 @@ export const TabTimelineAnchor: React.FC<TabTimelineAnchorProps> = ({
 						key={folder.id}
 						className='text-left'>
 						<button
-							className='w-auto p-0 bg-transparent cursor-pointer text-xs text-white whitespace-nowrap font-medium font-sans transition-all duration-200 hover:text-blue-300 hover:scale-105'
+							className='w-auto p-0 bg-transparent cursor-pointer text-xs text-[var(--text-primary)] whitespace-nowrap font-medium font-sans transition-all duration-200 hover:text-blue-400 hover:scale-105'
 							onClick={() => handleFolderClick(folder.id)}
 							title={folder.title}>
 							{folder.title}

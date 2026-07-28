@@ -101,7 +101,7 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 					{/* 毛玻璃背景 - 只在显示备选字母时显示 */}
 					{showFallback && (
 						<div
-							className='absolute inset-0 backdrop-blur-sm bg-white/10 border border-white/20 rounded'
+							className='absolute inset-0 backdrop-blur-sm bg-[var(--icon-surface)] border border-[var(--border-color)] rounded'
 							style={{ width: '60px', height: '60px' }}></div>
 					)}
 					{faviconUrl && (
@@ -115,21 +115,21 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 					)}
 					{showFallback && (
 						<div
-							className='flex items-center justify-center text-white text-lg font-medium absolute inset-0 z-10'
+							className='flex items-center justify-center text-[var(--text-primary)] text-lg font-medium absolute inset-0 z-10'
 							style={{ width: '60px', height: '60px' }}>
 							{getFirstChar(bookmark.title)}
 						</div>
 					)}
 					{showActionButtons && (
-						<div className='absolute -top-2 -right-2 flex items-center space-x-1 bg-white/10 backdrop-blur-md rounded-lg shadow-lg border border-white/20 z-50 gap-2 px-1'>
+						<div className='absolute -top-2 -right-2 flex items-center space-x-1 bg-[var(--surface-color)] backdrop-blur-md rounded-lg shadow-lg border border-[var(--border-color)] z-50 gap-2 px-1'>
 							<button
-								className='hover:bg-white/30 rounded text-white text-xs transition-all duration-200 hover:scale-110'
+								className='hover:bg-[var(--surface-muted)] rounded text-[var(--text-primary)] text-xs transition-all duration-200 hover:scale-110'
 								onClick={handleEdit}
 								title='编辑'>
 								✏️
 							</button>
 							<button
-								className=' hover:bg-white/30 rounded text-white text-xs transition-all duration-200 hover:scale-110'
+								className='hover:bg-[var(--surface-muted)] rounded text-[var(--text-primary)] text-xs transition-all duration-200 hover:scale-110'
 								onClick={handleDelete}
 								title='删除'>
 								🗑️
@@ -138,7 +138,7 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({
 					)}
 				</div>
 				<div
-					className='text-white text-xs font-medium leading-tight break-words overflow-hidden text-center h-8 flex items-center justify-center mt-2'
+				className='text-[var(--text-primary)] text-xs font-medium leading-tight break-words overflow-hidden text-center h-8 flex items-center justify-center mt-2'
 					style={{
 						display: '-webkit-box',
 						WebkitLineClamp: 2,
