@@ -27,7 +27,9 @@ function App() {
 		loadDisplaySettings,
 		folders,
 		bookmarks,
-		externalBookmarkIds
+		externalBookmarkIds,
+		rootBookmarkIds,
+		permissionState
 	} = useBookmarkStore();
 	const { loadSettings: loadBackgroundSettings, resolvedTheme } = useBackgroundStore();
 
@@ -58,10 +60,60 @@ function App() {
 		loadBackgroundSettings
 	]);
 
-	const externalBookmarkCount = bookmarks.filter(bookmark =>
-		externalBookmarkIds.includes(bookmark.id)
+	useEffect(() => {
+		if (!isAppReady || !permissionState.hasPermission) return;
+
+		let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+		const refreshBookmarks = () => {
+			clearTimeout(refreshTimer);
+			refreshTimer = setTimeout(() => {
+				void loadBookmarks({ silent: true }).catch(() => undefined);
+			}, 120);
+		};
+		const handleMessage = (
+			message: unknown,
+			_sender: chrome.runtime.MessageSender,
+			sendResponse: (response: { ok: boolean }) => void
+		) => {
+			if (
+				typeof message !== 'object' ||
+				message === null ||
+				!('action' in message) ||
+				message.action !== 'refreshBookmarks'
+			) {
+				return false;
+			}
+
+			void loadBookmarks({ silent: true })
+				.then(() => sendResponse({ ok: true }))
+				.catch(() => sendResponse({ ok: false }));
+			return true;
+		};
+
+		chrome.bookmarks.onCreated.addListener(refreshBookmarks);
+		chrome.bookmarks.onChanged.addListener(refreshBookmarks);
+		chrome.bookmarks.onMoved.addListener(refreshBookmarks);
+		chrome.bookmarks.onRemoved.addListener(refreshBookmarks);
+		chrome.runtime.onMessage.addListener(handleMessage);
+
+		return () => {
+			clearTimeout(refreshTimer);
+			chrome.bookmarks.onCreated.removeListener(refreshBookmarks);
+			chrome.bookmarks.onChanged.removeListener(refreshBookmarks);
+			chrome.bookmarks.onMoved.removeListener(refreshBookmarks);
+			chrome.bookmarks.onRemoved.removeListener(refreshBookmarks);
+			chrome.runtime.onMessage.removeListener(handleMessage);
+		};
+	}, [isAppReady, loadBookmarks, permissionState.hasPermission]);
+
+	const homeBookmarkIds = new Set([
+		...rootBookmarkIds,
+		...externalBookmarkIds
+	]);
+	const visibleBookmarkCount = bookmarks.filter(bookmark =>
+		homeBookmarkIds.has(bookmark.id)
 	).length;
-	const visibleItemCount = externalBookmarkCount + folders.length;
+	const visibleItemCount = visibleBookmarkCount + folders.length;
 	const visibleColumnCount = Math.min(Math.max(visibleItemCount, 1), 12);
 	const renderedColumnCount = isAppReady
 		? visibleColumnCount
@@ -90,9 +142,10 @@ function App() {
 						: theme.defaultAlgorithm
 			}}>
 			<div
-				className='min-h-screen px-4 md:px-8 flex items-center justify-center'>
+				className='min-h-screen px-4 md:px-8 flex justify-center'>
 				<div
-					className='w-full flex flex-col py-12 md:-translate-y-[5vh]'
+					id='main-content'
+					className='w-full flex flex-col pt-[clamp(72px,14vh,150px)] pb-28'
 					style={{ maxWidth: `${contentWidth}px` }}>
 					{isAppReady ? (
 						<>

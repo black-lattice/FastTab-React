@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" role="img" aria-labelledby="title desc">
+  <title id="title">几何尖锥 Logo｜深色背景版</title>
+  <desc id="desc">使用浅色直线构成的对称几何 Logo，适用于深色背景。</desc>
+  <g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter" vector-effect="non-scaling-stroke">
+    <!-- 外轮廓 -->
+    <path d="M270 349 L335 324 L354 290 L513 245 L626 308 L739 245 L897 290 L916 324 L981 349 L626 829 Z"/>
+
+    <!-- 左侧切面 -->
+    <path d="M335 324 L626 829"/>
+    <path d="M354 290 L626 829"/>
+    <path d="M458 261 L626 829"/>
+    <path d="M513 245 L626 829"/>
+
+    <!-- 右侧切面 -->
+    <path d="M916 324 L626 829"/>
+    <path d="M897 290 L626 829"/>
+    <path d="M794 261 L626 829"/>
+    <path d="M739 245 L626 829"/>
+
+    <!-- 中央钻石切面 -->
+    <path d="M626 308 L626 829"/>
+    <path d="M513 245 L626 447 L739 245"/>
+    <path d="M581 360 L626 308 L671 360"/>
+  </g>
+</svg>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal } from 'antd';
+import { FolderOpenOutlined, LinkOutlined } from '@ant-design/icons';
 import { Bookmark } from '../../types';
 import { useFavicon } from '../../hooks/useFavicon';
 import BookmarkCard from './BookmarkCard';
@@ -21,18 +22,19 @@ const collectBookmarks = (
 	});
 
 const FolderPreviewItem: React.FC<{ bookmark: Bookmark }> = ({ bookmark }) => {
-	const { faviconUrl } = useFavicon(bookmark.url);
+	const { faviconUrl, handleFaviconError } = useFavicon(bookmark.url);
 
 	return (
 		<div className='theme-preview-item flex items-center justify-center overflow-hidden rounded-sm text-[10px] font-semibold'>
 			{faviconUrl ? (
 				<img
-					className='w-full h-full object-contain'
+					className='bookmark-favicon-image w-full h-full object-contain'
 					src={faviconUrl}
 					alt=''
+					onError={handleFaviconError}
 				/>
 			) : (
-				bookmark.title.trim().charAt(0).toUpperCase() || '🔗'
+				bookmark.title.trim().charAt(0).toUpperCase() || <LinkOutlined />
 			)}
 		</div>
 	);
@@ -57,21 +59,22 @@ export const BookmarkFolder: React.FC<BookmarkFolderProps> = ({
 		<>
 			<button
 				type='button'
-				className='w-20 bg-transparent border-0 p-0 cursor-pointer transition-transform duration-200 hover:scale-105'
+				className='bookmark-folder-card'
 				onClick={() => setIsOpen(true)}
+				aria-label={`打开文件夹：${folder.title}`}
 				title={folder.title}>
-				<div className='theme-folder-preview w-[60px] h-[60px] mx-auto p-1.5 grid grid-cols-3 grid-rows-3 gap-0.5 rounded-2xl shadow-lg backdrop-blur-md'>
+				<div className='theme-folder-preview bookmark-folder-preview'>
 					{previewBookmarks.map(bookmark => (
 						<FolderPreviewItem key={bookmark.id} bookmark={bookmark} />
 					))}
 					{previewBookmarks.length === 0 && (
-						<span className='col-span-3 row-span-3 flex items-center justify-center text-2xl'>
-							📁
+						<span className='col-span-3 row-span-3 flex items-center justify-center text-xl'>
+							<FolderOpenOutlined />
 						</span>
 					)}
 				</div>
 				<div
-					className='mt-2 h-8 text-xs font-medium leading-tight text-[var(--text-primary)] text-center overflow-hidden'
+					className='home-bookmark-title'
 					style={{
 						display: '-webkit-box',
 						WebkitLineClamp: 2,

@@ -1,68 +1,62 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { message } from 'antd';
 import { Bookmark } from '../types';
 import { useBookmarkStore } from '../store/bookmarkStore';
 
+const findBookmarkCard = (element: EventTarget & Element) =>
+	(element as HTMLElement).closest<HTMLElement>('.bookmark-card');
+
 export const useDragDrop = () => {
-	const { loadBookmarks, moveBookmarkOptimized } = useBookmarkStore();
-	const [draggedItem, setDraggedItem] = useState<Bookmark | null>(null);
-	const [dragOverItem, setDragOverItem] = useState<string | null>(null);
+	const moveBookmarkOptimized = useBookmarkStore(
+		state => state.moveBookmarkOptimized
+	);
 
 	const handleDragStart = useCallback(
-		(e: React.DragEvent, bookmark: Bookmark) => {
-			setDraggedItem(bookmark);
-			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setData('text/plain', bookmark.id);
+		(event: React.DragEvent, bookmark: Bookmark) => {
+			event.dataTransfer.effectAllowed = 'move';
+			event.dataTransfer.setData('text/plain', bookmark.id);
+			findBookmarkCard(event.currentTarget)?.classList.add('is-dragging');
 		},
 		[]
 	);
-
-	const handleDragOver = useCallback(
-		(e: React.DragEvent, bookmarkId: string) => {
-			e.preventDefault();
-			e.dataTransfer.dropEffect = 'move';
-			setDragOverItem(bookmarkId);
-		},
-		[]
-	);
-
-	const handleDragLeave = useCallback(() => {
-		setDragOverItem(null);
+	const handleDragOver = useCallback((event: React.DragEvent) => {
+		event.preventDefault();
+		event.dataTransfer.dropEffect = 'move';
+		findBookmarkCard(event.currentTarget)?.classList.add('is-drop-target');
 	}, []);
-
+	const handleDragLeave = useCallback((event: React.DragEvent) => {
+		const nextTarget = event.relatedTarget;
+		if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+			return;
+		}
+		findBookmarkCard(event.currentTarget)?.classList.remove('is-drop-target');
+	}, []);
 	const handleDrop = useCallback(
-		async (e: React.DragEvent, targetBookmarkId: string) => {
-			e.preventDefault();
-			e.stopPropagation();
+		async (event: React.DragEvent, targetBookmarkId: string) => {
+			event.preventDefault();
+			event.stopPropagation();
+			findBookmarkCard(event.currentTarget)?.classList.remove('is-drop-target');
+			const draggedBookmarkId = event.dataTransfer.getData('text/plain');
 
-			const draggedBookmarkId = e.dataTransfer.getData('text/plain');
-
-			if (!draggedBookmarkId || draggedBookmarkId === targetBookmarkId) {
-				setDragOverItem(null);
-				setDraggedItem(null);
-				return;
-			}
-
+			if (!draggedBookmarkId || draggedBookmarkId === targetBookmarkId) return;
 			try {
 				await moveBookmarkOptimized(draggedBookmarkId, targetBookmarkId);
 			} catch (error) {
-				console.error('移动书签失败:', error);
-				await loadBookmarks();
-			} finally {
-				setDragOverItem(null);
-				setDraggedItem(null);
+				message.warning(
+					error instanceof Error ? error.message : '书签排序失败'
+				);
 			}
 		},
-		[moveBookmarkOptimized, loadBookmarks]
+		[moveBookmarkOptimized]
 	);
-
-	const handleDragEnd = useCallback(() => {
-		setDraggedItem(null);
-		setDragOverItem(null);
+	const handleDragEnd = useCallback((event: React.DragEvent) => {
+		findBookmarkCard(event.currentTarget)?.classList.remove('is-dragging');
+		document
+			.querySelectorAll('.bookmark-card.is-drop-target')
+			.forEach(card => card.classList.remove('is-drop-target'));
 	}, []);
 
 	return {
-		draggedItem,
-		dragOverItem,
 		handleDragStart,
 		handleDragOver,
 		handleDragLeave,

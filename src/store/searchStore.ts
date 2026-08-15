@@ -49,11 +49,9 @@ export const useSearchStore = create<SearchState>((set, get) => ({
 
 	setSelectedEngine: (selectedEngine: SearchEngine) => {
 		set({ selectedEngine });
-		try {
-			chrome.storage.sync.set({ [STORAGE_KEY]: selectedEngine.value });
-		} catch (error) {
-			console.error('保存搜索引擎设置失败:', error);
-		}
+		void chrome.storage.sync
+			.set({ [STORAGE_KEY]: selectedEngine.value })
+			.catch(error => console.error('保存搜索引擎设置失败:', error));
 	},
 
 	performSearch: (query: string) => {

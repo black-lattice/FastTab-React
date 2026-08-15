@@ -1,86 +1,110 @@
-import React from 'react';
+import { useState } from 'react';
 import ReactDOM from 'react-dom/client';
+import {
+	ArrowRightOutlined,
+	CheckCircleFilled,
+	ExclamationCircleFilled,
+	QuestionCircleOutlined,
+	ReloadOutlined
+} from '@ant-design/icons';
+
+type StatusMessage = {
+	type: 'success' | 'error';
+	text: string;
+} | null;
 
 const Popup: React.FC = () => {
-	const handleOpenNewTab = (e: React.MouseEvent) => {
-		e.preventDefault();
-		chrome.tabs.create({ url: 'chrome://newtab/' });
-		window.close();
+	const [showHelp, setShowHelp] = useState(false);
+	const [isRefreshing, setIsRefreshing] = useState(false);
+	const [status, setStatus] = useState<StatusMessage>(null);
+	const version =
+		typeof chrome !== 'undefined' && chrome.runtime?.getManifest
+			? chrome.runtime.getManifest().version
+			: '开发版';
+
+	const handleOpenNewTab = async () => {
+		if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+			await chrome.tabs.create({ url: 'chrome://newtab/' });
+			window.close();
+			return;
+		}
+		window.open('./newtab.html', '_blank', 'noopener,noreferrer');
 	};
-
-	const handleRefreshBookmarks = () => {
-		chrome.runtime.sendMessage({ action: 'refreshBookmarks' });
-		showMessage('书签已刷新');
-	};
-
-	const handleShowHelp = () => {
-		const helpText = `
-快捷键：
-• Ctrl+K: 聚焦搜索框
-• Ctrl+F: 搜索书签
-• Enter: 搜索
-• Esc: 关闭对话框
-
-功能：
-• 拖拽排序书签
-• 实时搜索书签
-• 编辑/删除书签
-• 多搜索引擎支持
-    `;
-		alert(helpText);
-	};
-
-	const showMessage = (text: string) => {
-		const message = document.createElement('div');
-		message.textContent = text;
-		message.className =
-			'fixed top-2.5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded text-xs z-[1000]';
-		document.body.appendChild(message);
-		setTimeout(() => message.remove(), 2000);
+	const handleRefreshBookmarks = async () => {
+		setIsRefreshing(true);
+		setStatus(null);
+		try {
+			if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+				throw new Error('扩展运行环境不可用');
+			}
+			const response = await chrome.runtime.sendMessage({
+				action: 'refreshBookmarks'
+			});
+			if (!response?.ok) throw new Error('刷新失败');
+			setStatus({ type: 'success', text: '书签已同步' });
+		} catch {
+			setStatus({
+				type: 'error',
+				text: '请先打开一个 FastTab 新标签页'
+			});
+		} finally {
+			setIsRefreshing(false);
+		}
 	};
 
 	return (
-		<div className='w-full'>
-			<div className='text-center mb-4'>
-				<h1 className='text-blue-600 text-lg m-0 mb-1'>
-					FastTab React
-				</h1>
-				<p className='text-gray-500 text-xs m-0'>快速标签页管理器</p>
-			</div>
+		<main className='popup-shell'>
+			<header className='popup-header'>
+				<img src='../icons/favicon.svg' alt='' className='popup-logo' />
+				<div>
+					<h1>FastTab</h1>
+					<p>让常用网址触手可及</p>
+				</div>
+			</header>
 
-			<div className='mb-3'>
-				<h3 className='text-sm m-0 mb-2 text-gray-800'>快速操作</h3>
-				<a
-					href='#'
-					className='block w-full px-2 py-2 m-1 border-none rounded bg-blue-600 text-white cursor-pointer text-xs text-center no-underline transition-colors hover:bg-blue-700'
-					onClick={handleOpenNewTab}>
-					打开新标签页
-				</a>
+			<button
+				type='button'
+				className='popup-primary-action'
+				onClick={() => void handleOpenNewTab()}>
+				<span>打开新标签页</span>
+				<ArrowRightOutlined />
+			</button>
+
+			<div className='popup-secondary-actions'>
 				<button
-					className='w-full px-2 py-2 m-1 border-none rounded bg-gray-200 text-gray-800 cursor-pointer text-xs hover:bg-gray-300'
-					onClick={handleRefreshBookmarks}>
-					刷新书签
+					type='button'
+					onClick={() => void handleRefreshBookmarks()}
+					disabled={isRefreshing}>
+					<ReloadOutlined spin={isRefreshing} />
+					<span>{isRefreshing ? '同步中…' : '同步书签'}</span>
+				</button>
+				<button
+					type='button'
+					onClick={() => setShowHelp(value => !value)}
+					aria-expanded={showHelp}>
+					<QuestionCircleOutlined />
+					<span>快捷键</span>
 				</button>
 			</div>
 
-			<div className='mb-3'>
-				<h3 className='text-sm m-0 mb-2 text-gray-800'>帮助</h3>
-				<button
-					className='w-full px-2 py-2 m-1 border-none rounded bg-gray-200 text-gray-800 cursor-pointer text-xs hover:bg-gray-300'
-					onClick={handleShowHelp}>
-					使用帮助
-				</button>
-			</div>
+			{status && (
+				<div className={`popup-status is-${status.type}`} role='status' aria-live='polite'>
+					{status.type === 'success' ? <CheckCircleFilled /> : <ExclamationCircleFilled />}
+					<span>{status.text}</span>
+				</div>
+			)}
 
-			<div className='text-xs text-gray-500 text-center mt-2.5'>
-				版本 1.0.0 | 快捷键: Ctrl+K 搜索
-			</div>
-		</div>
+			{showHelp && (
+				<section className='popup-help' aria-label='快捷键说明'>
+					<div><kbd>⌘/Ctrl</kbd><span>+</span><kbd>K</kbd><p>聚焦搜索</p></div>
+					<div><kbd>↑</kbd><kbd>↓</kbd><p>选择匹配书签</p></div>
+					<div><kbd>Enter</kbd><p>打开书签或搜索网页</p></div>
+				</section>
+			)}
+
+			<footer>版本 {version} · 数据默认保留在本机</footer>
+		</main>
 	);
 };
 
-ReactDOM.createRoot(document.getElementById('popup-root')!).render(
-	<React.StrictMode>
-		<Popup />
-	</React.StrictMode>
-);
+ReactDOM.createRoot(document.getElementById('popup-root')!).render(<Popup />);

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { message } from 'antd';
 import { Bookmark } from '../../../types';
+import { normalizeBookmarkUrl } from '../../../utils/bookmarkUrl';
 
 interface EditModalProps {
 	isOpen: boolean;
@@ -20,27 +22,26 @@ export const EditModal: React.FC<EditModalProps> = ({
 
 	useEffect(() => {
 		if (bookmark) {
-			console.log('isOpen:', isOpen);
-			console.log('bookmark:', bookmark);
 			setTitle(bookmark.title);
 			setUrl(bookmark.url);
 		}
 	}, [isOpen, bookmark]);
 
 	const handleSave = async () => {
-		if (!title.trim() || !url.trim()) {
-			alert('请填写完整的书签信息');
+		if (!title.trim()) {
+			message.error('请输入书签名称');
 			return;
 		}
 
 		try {
 			await onSave({
 				title: title.trim(),
-				url: url.trim()
+				url: normalizeBookmarkUrl(url)
 			});
+			message.success('书签已更新');
 		} catch (error) {
 			console.error('保存失败:', error);
-			alert('保存失败，请重试');
+			message.error(error instanceof Error ? error.message : '保存失败，请重试');
 		}
 	};
 
@@ -83,7 +84,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 							id='editTitle'
 							value={title}
 							onChange={e => setTitle(e.target.value)}
-							onKeyPress={handleKeyPress}
+							onKeyDown={handleKeyPress}
 							placeholder='书签标题'
 							autoFocus
 							className='theme-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors'
@@ -100,7 +101,7 @@ export const EditModal: React.FC<EditModalProps> = ({
 							id='editUrl'
 							value={url}
 							onChange={e => setUrl(e.target.value)}
-							onKeyPress={handleKeyPress}
+							onKeyDown={handleKeyPress}
 							placeholder='https://example.com'
 							className='theme-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors'
 						/>

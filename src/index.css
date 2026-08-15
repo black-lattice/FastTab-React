@@ -1,11 +1,12 @@
 @import "tailwindcss";
+@import "./styles/enhancements.css";
 
 /* CSS 变量定义 - 用于动态颜色调整 */
 :root {
   /* 文字颜色变量 */
   --text-primary: #333333;
   --text-secondary: #666666;
-  --text-tertiary: #999999;
+  --text-tertiary: #6b7280;
   --text-black: #000000;
   
   /* 背景相关变量 */
@@ -25,12 +26,14 @@
 	--glass-shadow: 0 16px 40px rgba(31, 38, 55, 0.14);
 	--manager-surface: rgba(250, 251, 253, 0.94);
 	--page-background: linear-gradient(145deg, #f7f8fb 0%, #eef1f7 48%, #e8edf5 100%);
+	--scrollbar-thumb: rgba(71, 85, 105, 0.34);
+	--scrollbar-thumb-hover: rgba(71, 85, 105, 0.54);
 }
 
 [data-theme='dark'] {
   --text-primary: #ffffff;
   --text-secondary: #cccccc;
-  --text-tertiary: #aaaaaa;
+  --text-tertiary: #b7bdc8;
 	--surface-color: rgba(24, 25, 30, 0.68);
 	--surface-elevated: rgba(38, 39, 45, 0.74);
 	--surface-muted: rgba(255, 255, 255, 0.08);
@@ -42,6 +45,8 @@
 	--glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
 	--manager-surface: rgba(27, 28, 33, 0.94);
 	--page-background: radial-gradient(circle at 25% 20%, #252a36 0%, #17191f 42%, #0e0f13 100%);
+	--scrollbar-thumb: rgba(255, 255, 255, 0.28);
+	--scrollbar-thumb-hover: rgba(255, 255, 255, 0.46);
 }
 
 .theme-panel {
@@ -94,6 +99,12 @@
 .theme-preview-item {
 	background: var(--surface-elevated);
 	color: var(--text-secondary);
+}
+
+.bookmark-favicon-image {
+	image-rendering: auto;
+	backface-visibility: hidden;
+	transform: translateZ(0);
 }
 
 .search-engine-trigger {
@@ -531,34 +542,37 @@ body {
   min-height: 100vh;
   color: var(--text-primary);
   position: relative;
-  /* 隐藏滚动条 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
 
-body::-webkit-scrollbar {
-  display: none; /* WebKit */
-}
-
-html {
-  /* 隐藏滚动条 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-}
-
-html::-webkit-scrollbar {
-  display: none; /* WebKit */
-}
-
-/* 为所有可能产生滚动的容器隐藏滚动条 */
 * {
-  /* 隐藏所有元素的滚动条 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
+	scrollbar-width: thin;
+	scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 *::-webkit-scrollbar {
-  display: none; /* WebKit */
+	display: block;
+	width: 10px;
+	height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+	border: 3px solid transparent;
+	border-radius: 999px;
+	background: var(--scrollbar-thumb);
+	background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+	background: var(--scrollbar-thumb-hover);
+	background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+	background: transparent;
 }
 
 /* 半透明黑色蒙层 - 增强白色字体可读性 */
@@ -586,15 +600,4 @@ body.show-overlay::before {
 /* 隐藏蒙层 */
 body.hide-overlay::before {
   opacity: 0;
-}
-
-/* 隐藏滚动条但保持滚动功能 */
-html {
-  /* 隐藏滚动条 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-}
-
-html::-webkit-scrollbar {
-  display: none; /* WebKit */
 }

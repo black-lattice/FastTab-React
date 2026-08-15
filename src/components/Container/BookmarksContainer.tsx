@@ -11,15 +11,25 @@ export const BookmarksContainer: React.FC = () => {
 		folders,
 		bookmarks,
 		externalBookmarkIds,
+		rootBookmarkIds,
 		loading,
 		permissionState,
 		requestPermission
 	} = useBookmarkStore();
 
-	const { isEditModalOpen, editingBookmark, closeEditModal } = useUIStore();
+	const {
+		isEditModalOpen,
+		editingBookmark,
+		closeEditModal,
+		openAddBookmark
+	} = useUIStore();
 	const { updateBookmark } = useBookmarkStore();
-	const externalBookmarks = bookmarks.filter(bookmark =>
-		externalBookmarkIds.includes(bookmark.id)
+	const homeBookmarkIds = new Set([
+		...rootBookmarkIds,
+		...externalBookmarkIds
+	]);
+	const homeBookmarks = bookmarks.filter(bookmark =>
+		homeBookmarkIds.has(bookmark.id)
 	);
 
 	const handleSave = async (changes: Partial<Bookmark>) => {
@@ -34,10 +44,10 @@ export const BookmarksContainer: React.FC = () => {
 			<div className='text-center p-4 text-[var(--text-primary)] max-w-md mx-auto'>
 				<h2 className='text-3xl mb-4'>欢迎使用 FastTab</h2>
 				<p className='text-base mb-5 text-[var(--text-secondary)] leading-relaxed'>
-					为了提供更好的体验，我们需要访问您的书签数据
+					FastTab 只在本机读取和整理浏览器书签，不会上传书签网址
 				</p>
 				<button
-					className='theme-glass border-2 text-[var(--text-primary)] px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-300 backdrop-blur-md hover:bg-[var(--surface-muted)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed'
+					className='theme-glass min-h-11 border-2 text-[var(--text-primary)] px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-300 backdrop-blur-md hover:bg-[var(--surface-muted)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed'
 					onClick={() => requestPermission()}
 					disabled={permissionState.isRequesting}
 				>
@@ -56,16 +66,19 @@ export const BookmarksContainer: React.FC = () => {
 		);
 	}
 
-	// 检查是否有文件夹
-	const hasFolders = folders.length > 0;
-
-	if (!hasFolders) {
+	if (folders.length === 0 && homeBookmarks.length === 0) {
 		return (
 			<div className='text-center p-4 text-[var(--text-primary)]'>
 				<h3 className='text-2xl mb-2.5'>暂无书签</h3>
-				<p className='text-base text-[var(--text-secondary)] leading-relaxed'>
-					您还没有添加任何书签，或者书签文件夹为空
+				<p className='mb-5 text-base text-[var(--text-secondary)] leading-relaxed'>
+					添加一个常用网址，开始搭建你的新标签页
 				</p>
+				<button
+					type='button'
+					className='min-h-11 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
+					onClick={openAddBookmark}>
+					添加第一个书签
+				</button>
 			</div>
 		);
 	}
@@ -75,7 +88,7 @@ export const BookmarksContainer: React.FC = () => {
 			<main className='w-full flex flex-col items-center'>
 				<section className='w-full mb-1.5'>
 					<div className='grid grid-cols-[repeat(auto-fill,80px)] justify-start w-full gap-4'>
-						{externalBookmarks.map(bookmark => (
+						{homeBookmarks.map(bookmark => (
 							<BookmarkCard key={bookmark.id} bookmark={bookmark} />
 						))}
 						{/* 文件夹紧接外显书签排列，填满当前行后再换行 */}
