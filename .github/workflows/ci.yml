@@ -3,7 +3,7 @@ name: 质量检查与扩展构建
 on:
   push:
     branches:
-      - "**"
+      - main
   pull_request:
   workflow_dispatch:
 
