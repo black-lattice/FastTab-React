@@ -2,6 +2,17 @@
 
 FastTab 是一个本地优先的 Chrome 新标签页扩展，使用 React 18、TypeScript、Vite 和 Zustand 构建。
 
+## 下载与安装
+
+前往 [GitHub Releases](https://github.com/black-lattice/FastTab-React/releases/latest) 下载最新版 `fasttab-react-v*.zip`：
+
+1. 解压下载的 ZIP 文件。
+2. Chrome 打开 `chrome://extensions`，Edge 打开 `edge://extensions`。
+3. 开启“开发者模式”。
+4. 点击“加载已解压的扩展程序”，选择解压后的目录。
+
+GitHub 下载版适合手动安装和测试；如需一键安装与自动更新，需要发布到 Chrome Web Store。
+
 ## 特性
 
 - 本地书签支持模糊、拼音和使用频率排序，并支持自定义网页搜索引擎

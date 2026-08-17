@@ -1,0 +1,54 @@
+name: 质量检查与扩展构建
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.30.3
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 执行完整检查
+        run: pnpm check
+
+      - name: 确认 dist 与源码一致
+        run: git diff --exit-code -- dist
+
+      - name: 打包 Chrome 扩展
+        run: cd dist && zip -r ../fasttab-extension.zip .
+
+      - name: 上传可安装产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: fasttab-extension
+          path: fasttab-extension.zip
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
