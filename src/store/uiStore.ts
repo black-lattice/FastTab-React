@@ -6,6 +6,8 @@ interface UIState {
 	editingBookmark: Bookmark | null;
 	isBookmarkManagerOpen: boolean;
 	isAddBookmarkOpen: boolean;
+	isAppearanceSettingsOpen: boolean;
+	isWorkspaceManagerOpen: boolean;
 	selectedBookmarkIds: string[];
 	openEditModal: (bookmark: Bookmark) => void;
 	closeEditModal: () => void;
@@ -13,6 +15,11 @@ interface UIState {
 	closeBookmarkManager: () => void;
 	openAddBookmark: () => void;
 	closeAddBookmark: () => void;
+	openAppearanceSettings: () => void;
+	closeAppearanceSettings: () => void;
+	toggleAppearanceSettings: () => void;
+	openWorkspaceManager: () => void;
+	closeWorkspaceManager: () => void;
 	setSelectedBookmarkIds: (ids: string[]) => void;
 }
 
@@ -21,6 +28,8 @@ export const useUIStore = create<UIState>(set => ({
 	editingBookmark: null,
 	isBookmarkManagerOpen: false,
 	isAddBookmarkOpen: false,
+	isAppearanceSettingsOpen: false,
+	isWorkspaceManagerOpen: false,
 	selectedBookmarkIds: [],
 
 	openEditModal: (bookmark: Bookmark) =>
@@ -36,6 +45,17 @@ export const useUIStore = create<UIState>(set => ({
 	openAddBookmark: () => set({ isAddBookmarkOpen: true }),
 
 	closeAddBookmark: () => set({ isAddBookmarkOpen: false }),
+
+	openAppearanceSettings: () => set({ isAppearanceSettingsOpen: true }),
+
+	closeAppearanceSettings: () => set({ isAppearanceSettingsOpen: false }),
+
+	toggleAppearanceSettings: () =>
+		set(state => ({ isAppearanceSettingsOpen: !state.isAppearanceSettingsOpen })),
+
+	openWorkspaceManager: () => set({ isWorkspaceManagerOpen: true }),
+
+	closeWorkspaceManager: () => set({ isWorkspaceManagerOpen: false }),
 
 	setSelectedBookmarkIds: (selectedIds: string[]) =>
 		set({ selectedBookmarkIds: selectedIds })

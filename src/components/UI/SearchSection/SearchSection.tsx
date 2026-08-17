@@ -6,13 +6,22 @@ import {
 	useState
 } from 'react';
 import { Button, Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
 import {
+	ControlOutlined,
 	DownOutlined,
 	GlobalOutlined,
-	SearchOutlined
+	SearchOutlined,
+	SettingOutlined
 } from '@ant-design/icons';
 import { useBookmarkStore } from '../../../store/bookmarkStore';
 import { useSearchStore } from '../../../store/searchStore';
+import { rankBookmarks } from '../../../utils/bookmarkSearch';
+import type { BookmarkPhonetic } from '../../../utils/bookmarkSearch';
+import { getNextSearchIndex } from '../../../utils/searchKeyboard';
+import { SearchEngineSettingsModal } from './SearchEngineSettingsModal';
+import { useSearchCommands } from './useSearchCommands';
+import type { SearchCommand } from './useSearchCommands';
 
 const engineBadgeClass: Record<string, string> = {
 	google: 'is-google',
@@ -21,24 +30,50 @@ const engineBadgeClass: Record<string, string> = {
 };
 
 export const SearchSection: React.FC = () => {
-	const {
-		searchQuery,
-		setSearchQuery,
-		selectedEngine,
-		setSelectedEngine,
-		searchEngines,
-		performSearch,
-		loadSettings
-	} = useSearchStore();
+	const searchQuery = useSearchStore(state => state.searchQuery);
+	const setSearchQuery = useSearchStore(state => state.setSearchQuery);
+	const selectedEngine = useSearchStore(state => state.selectedEngine);
+	const setSelectedEngine = useSearchStore(state => state.setSelectedEngine);
+	const searchEngines = useSearchStore(state => state.searchEngines);
+	const performSearch = useSearchStore(state => state.performSearch);
+	const loadSettings = useSearchStore(state => state.loadSettings);
+	const bookmarkUsage = useSearchStore(state => state.bookmarkUsage);
+	const recordBookmarkVisit = useSearchStore(state => state.recordBookmarkVisit);
 	const bookmarks = useBookmarkStore(state => state.bookmarks);
+	const commands = useSearchCommands();
 	const deferredQuery = useDeferredValue(searchQuery.trim().toLowerCase());
 	const inputRef = useRef<HTMLInputElement>(null);
+	const phoneticPromiseRef = useRef<Promise<Record<string, BookmarkPhonetic>> | null>(null);
 	const [isFocused, setIsFocused] = useState(false);
 	const [activeIndex, setActiveIndex] = useState(-1);
+	const [isEngineSettingsOpen, setIsEngineSettingsOpen] = useState(false);
+	const [phoneticIndex, setPhoneticIndex] = useState<Record<string, BookmarkPhonetic>>({});
 
 	useEffect(() => {
 		void loadSettings();
 	}, [loadSettings]);
+
+	useEffect(() => {
+		phoneticPromiseRef.current = null;
+		setPhoneticIndex({});
+	}, [bookmarks]);
+
+	useEffect(() => {
+		const shouldLoadPinyin =
+			Boolean(deferredQuery) &&
+			/^[a-z\d\s]+$/i.test(deferredQuery) &&
+			bookmarks.some(bookmark => /[\u3400-\u9fff]/.test(bookmark.title));
+		if (!shouldLoadPinyin) return;
+		let active = true;
+		phoneticPromiseRef.current ||= import('../../../utils/bookmarkPinyin')
+			.then(module => module.buildBookmarkPhoneticIndex(bookmarks));
+		void phoneticPromiseRef.current.then(index => {
+			if (active) setPhoneticIndex(index);
+		});
+		return () => {
+			active = false;
+		};
+	}, [bookmarks, deferredQuery]);
 
 	useEffect(() => {
 		const handleShortcut = (event: KeyboardEvent) => {
@@ -55,49 +90,59 @@ export const SearchSection: React.FC = () => {
 		return () => window.removeEventListener('keydown', handleShortcut);
 	}, []);
 
-	const matchingBookmarks = useMemo(() => {
-		if (!deferredQuery) return [];
-		return bookmarks
-			.map(bookmark => {
-				const title = bookmark.title.toLowerCase();
-				const url = bookmark.url.toLowerCase();
-				const score = title.startsWith(deferredQuery)
-					? 0
-					: title.includes(deferredQuery)
-						? 1
-						: url.includes(deferredQuery)
-							? 2
-							: 3;
-				return { bookmark, score };
-			})
-			.filter(item => item.score < 3)
-			.sort((a, b) => a.score - b.score)
-			.slice(0, 6)
-			.map(item => item.bookmark);
-	}, [bookmarks, deferredQuery]);
+	const isCommandMode = deferredQuery.startsWith('>');
+	const commandQuery = deferredQuery.slice(1).trim();
+	const matchingCommands = useMemo(() => commands.filter(command =>
+		!commandQuery ||
+		command.title.toLowerCase().includes(commandQuery) ||
+		command.keywords.toLowerCase().includes(commandQuery)
+	), [commandQuery, commands]);
+	const matchingBookmarks = useMemo(
+		() => isCommandMode
+			? []
+			: rankBookmarks(bookmarks, deferredQuery, bookmarkUsage, phoneticIndex),
+		[bookmarkUsage, bookmarks, deferredQuery, isCommandMode, phoneticIndex]
+	);
+	const resultCount = isCommandMode ? matchingCommands.length : matchingBookmarks.length;
+	const suggestionsVisible = isFocused && Boolean(searchQuery.trim());
 
-	const openBookmark = (url: string) => {
-		window.location.href = url;
+	const executeCommand = async (command: SearchCommand) => {
+		setSearchQuery('');
+		setActiveIndex(-1);
+		await command.execute();
 	};
-	const handleSearch = () => performSearch(searchQuery);
-	const suggestionsVisible =
-		isFocused && Boolean(searchQuery.trim()) && matchingBookmarks.length > 0;
-	const engineItems = searchEngines.map(engine => ({
-		key: engine.value,
-		label: (
-			<div className='flex min-w-36 items-center gap-3 py-1'>
-				<span className={`search-engine-badge ${engineBadgeClass[engine.value]}`}>
-					{engine.icon}
-				</span>
-				<div className='flex flex-col'>
-					<span className='font-medium'>{engine.label}</span>
-					<span className='text-[11px] text-[var(--text-tertiary)]'>
-						使用 {engine.label} 搜索
-					</span>
+	const openActiveBookmark = (index: number) => {
+		const bookmark = matchingBookmarks[index];
+		if (!bookmark) return false;
+		recordBookmarkVisit(bookmark.id);
+		window.location.href = bookmark.url;
+		return true;
+	};
+	const handlePrimaryAction = () => {
+		if (isCommandMode) {
+			const command = matchingCommands[activeIndex >= 0 ? activeIndex : 0];
+			if (command) void executeCommand(command);
+			return;
+		}
+		if (!openActiveBookmark(activeIndex)) performSearch(searchQuery);
+	};
+
+	const engineItems: MenuProps['items'] = [
+		...searchEngines.map(engine => ({
+			key: engine.id,
+			label: (
+				<div className='flex min-w-36 items-center gap-3 py-1'>
+					<span className={`search-engine-badge ${engineBadgeClass[engine.value] || ''}`}>{engine.icon}</span>
+					<div className='flex flex-col'>
+						<span className='font-medium'>{engine.label}</span>
+						<span className='text-[11px] text-[var(--text-tertiary)]'>使用 {engine.label} 搜索</span>
+					</div>
 				</div>
-			</div>
-		)
-	}));
+			)
+		})),
+		{ type: 'divider' },
+		{ key: 'manage-engines', icon: <SettingOutlined />, label: '管理搜索引擎' }
+	];
 
 	return (
 		<header className='relative z-40 mx-auto mb-8 w-full max-w-2xl'>
@@ -106,21 +151,20 @@ export const SearchSection: React.FC = () => {
 					menu={{
 						items: engineItems,
 						selectable: true,
-						selectedKeys: [selectedEngine.value],
+						selectedKeys: [selectedEngine.id],
 						onClick: ({ key }) => {
-							const engine = searchEngines.find(item => item.value === key);
+							if (key === 'manage-engines') {
+								setIsEngineSettingsOpen(true);
+								return;
+							}
+							const engine = searchEngines.find(item => item.id === key);
 							if (engine) setSelectedEngine(engine);
 						}
 					}}
 					placement='bottomLeft'
 					trigger={['click']}>
-					<button
-						type='button'
-						className='search-engine-trigger'
-						aria-label='选择搜索引擎'>
-						<span className={`search-engine-badge ${engineBadgeClass[selectedEngine.value]}`}>
-							{selectedEngine.icon}
-						</span>
+					<button type='button' className='search-engine-trigger' aria-label='选择搜索引擎'>
+						<span className={`search-engine-badge ${engineBadgeClass[selectedEngine.value] || ''}`}>{selectedEngine.icon}</span>
 						<span>{selectedEngine.label}</span>
 						<DownOutlined className='text-[9px] text-[var(--text-tertiary)]' />
 					</button>
@@ -139,76 +183,85 @@ export const SearchSection: React.FC = () => {
 					onFocus={() => setIsFocused(true)}
 					onBlur={() => setIsFocused(false)}
 					onKeyDown={event => {
-						if (event.key === 'ArrowDown' && matchingBookmarks.length) {
+						if (event.key === 'ArrowDown' && resultCount) {
 							event.preventDefault();
-							setActiveIndex(index => (index + 1) % matchingBookmarks.length);
-						} else if (event.key === 'ArrowUp' && matchingBookmarks.length) {
+							setActiveIndex(index => getNextSearchIndex(index, resultCount, 'next'));
+						} else if (event.key === 'ArrowUp' && resultCount) {
 							event.preventDefault();
-							setActiveIndex(index =>
-								index <= 0 ? matchingBookmarks.length - 1 : index - 1
-							);
+							setActiveIndex(index => getNextSearchIndex(index, resultCount, 'previous'));
 						} else if (event.key === 'Enter') {
-							const activeBookmark = matchingBookmarks[activeIndex];
-							if (activeBookmark) openBookmark(activeBookmark.url);
-							else handleSearch();
+							handlePrimaryAction();
 						} else if (event.key === 'Escape') {
 							setIsFocused(false);
 							inputRef.current?.blur();
 						}
 					}}
-					placeholder={`搜索书签，或使用 ${selectedEngine.label}`}
+					placeholder={`搜索书签，输入 > 执行操作`}
 					aria-autocomplete='list'
-					aria-controls='bookmark-search-results'
+					aria-controls='fasttab-search-results'
 					aria-expanded={suggestionsVisible}
 					autoFocus
 				/>
 				<Button
 					type='primary'
 					shape='circle'
-					icon={<SearchOutlined />}
+					icon={isCommandMode ? <ControlOutlined /> : <SearchOutlined />}
 					disabled={!searchQuery.trim()}
-					onClick={handleSearch}
-					aria-label={`使用 ${selectedEngine.label} 搜索网页`}
+					onClick={handlePrimaryAction}
+					aria-label={isCommandMode ? '执行快捷命令' : `使用 ${selectedEngine.label} 搜索网页`}
 				/>
 			</div>
 
 			{suggestionsVisible && (
 				<div
-					id='bookmark-search-results'
+					id='fasttab-search-results'
 					className='theme-panel search-suggestions absolute left-0 right-0 top-[calc(100%+10px)] overflow-hidden rounded-2xl p-2'
-					role='listbox'
-					onMouseDown={event => event.preventDefault()}>
+					role='listbox'>
 					<div className='px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]'>
-						匹配书签
+						{isCommandMode ? '快捷命令' : '匹配书签'}
 					</div>
-					{matchingBookmarks.map((bookmark, index) => (
+					{isCommandMode ? matchingCommands.map((command, index) => (
 						<button
-							key={bookmark.id}
+							key={command.id}
 							type='button'
 							className={`search-suggestion ${activeIndex === index ? 'is-active' : ''}`}
 							role='option'
 							aria-selected={activeIndex === index}
+							onMouseDown={event => event.preventDefault()}
 							onMouseEnter={() => setActiveIndex(index)}
-							onClick={() => openBookmark(bookmark.url)}>
-							<span className='search-suggestion-icon'>
-								{bookmark.title.trim().charAt(0).toUpperCase() || <GlobalOutlined />}
-							</span>
-							<span className='min-w-0 flex-1 text-left'>
-								<strong>{bookmark.title}</strong>
-								<small>{bookmark.url}</small>
-							</span>
-							<span className='text-xs text-[var(--text-tertiary)]'>打开</span>
+							onClick={() => void executeCommand(command)}>
+							<span className='search-suggestion-icon'>{command.icon}</span>
+							<span className='min-w-0 flex-1 text-left'><strong>{command.title}</strong><small>{command.description}</small></span>
+							<span className='text-xs text-[var(--text-tertiary)]'>执行</span>
 						</button>
+					)) : matchingBookmarks.map((bookmark, index) => (
+						<a
+							key={bookmark.id}
+							href={bookmark.url}
+							className={`search-suggestion ${activeIndex === index ? 'is-active' : ''}`}
+							role='option'
+							aria-selected={activeIndex === index}
+							onMouseDown={event => { if (event.button === 0) event.preventDefault(); }}
+							onMouseEnter={() => setActiveIndex(index)}
+							onClick={() => recordBookmarkVisit(bookmark.id)}>
+							<span className='search-suggestion-icon'>{bookmark.title.trim().charAt(0).toUpperCase() || <GlobalOutlined />}</span>
+							<span className='min-w-0 flex-1 text-left'><strong>{bookmark.title}</strong><small>{bookmark.url}</small></span>
+							<span className='text-xs text-[var(--text-tertiary)]'>打开</span>
+						</a>
 					))}
-					<button
-						type='button'
-						className='search-web-action'
-						onClick={handleSearch}>
-						<GlobalOutlined />
-						<span>使用 {selectedEngine.label} 搜索“{searchQuery.trim()}”</span>
-					</button>
+					{!isCommandMode && (
+						<button type='button' className='search-web-action' onMouseDown={event => event.preventDefault()} onClick={() => performSearch(searchQuery)}>
+							<GlobalOutlined />
+							<span>使用 {selectedEngine.label} 搜索“{searchQuery.trim()}”</span>
+						</button>
+					)}
 				</div>
 			)}
+
+			<SearchEngineSettingsModal
+				open={isEngineSettingsOpen}
+				onClose={() => setIsEngineSettingsOpen(false)}
+			/>
 		</header>
 	);
 };

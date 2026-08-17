@@ -1,13 +1,16 @@
 import { create } from 'zustand';
 import { Bookmark, PermissionState } from '../types';
 import { parseBookmarksBar } from '../utils/bookmarkTree';
-
+import { useWorkspaceStore } from './workspaceStore';
+import {
+	captureBookmarkSnapshots,
+	createUndoAction,
+	restoreBookmarkAction,
+	toBookmarkSnapshot,
+	type BookmarkUndoAction
+} from '../utils/bookmarkUndo';
 const EXTERNAL_BOOKMARK_IDS_KEY = 'externalBookmarkIds';
-
-interface LoadBookmarksOptions {
-	silent?: boolean;
-}
-
+interface LoadBookmarksOptions { silent?: boolean; }
 interface BookmarkState {
 	bookmarks: Bookmark[];
 	bookmarksBarId: string;
@@ -15,9 +18,11 @@ interface BookmarkState {
 	rootBookmarkIds: string[];
 	externalBookmarkIds: string[];
 	loading: boolean;
+	error: string | null;
+	lastUndoAction: BookmarkUndoAction | null;
+	isUndoing: boolean;
 	permissionState: PermissionState;
 	checkPermission: () => Promise<boolean>;
-	requestPermission: () => Promise<boolean>;
 	loadBookmarks: (options?: LoadBookmarksOptions) => Promise<void>;
 	loadDisplaySettings: () => Promise<void>;
 	setBookmarkExternal: (id: string, isExternal: boolean) => Promise<void>;
@@ -28,6 +33,7 @@ interface BookmarkState {
 	updateBookmark: (id: string, changes: Partial<Bookmark>) => Promise<void>;
 	removeBookmark: (id: string) => Promise<void>;
 	removeBookmarks: (ids: string[]) => Promise<void>;
+	removeEmptyFolders: (ids: string[]) => Promise<void>;
 	moveBookmark: (
 		id: string,
 		destination: { parentId?: string; index?: number }
@@ -37,6 +43,8 @@ interface BookmarkState {
 		destination: { parentId?: string; index?: number }
 	) => Promise<void>;
 	moveBookmarkOptimized: (draggedId: string, targetId: string) => Promise<void>;
+	undoLastAction: () => Promise<void>;
+	clearUndoAction: () => void;
 }
 
 export const useBookmarkStore = create<BookmarkState>((set, get) => ({
@@ -46,44 +54,34 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 	rootBookmarkIds: [],
 	externalBookmarkIds: [],
 	loading: true,
+	error: null,
+	lastUndoAction: null,
+	isUndoing: false,
 	permissionState: {
 		hasPermission: false,
-		isRequesting: false
+		isChecking: false
 	},
 
 	checkPermission: async () => {
+		set(state => ({
+			permissionState: { ...state.permissionState, isChecking: true }
+		}));
 		try {
 			const hasPermission = await chrome.permissions.contains({
 				permissions: ['bookmarks']
 			});
 			set(state => ({
-				permissionState: { ...state.permissionState, hasPermission }
+				error: hasPermission ? state.error : null,
+				permissionState: { hasPermission, isChecking: false }
 			}));
 			return hasPermission;
 		} catch (error) {
 			console.error('检查权限失败:', error);
-			set(state => ({
-				loading: false,
-				permissionState: { ...state.permissionState, hasPermission: false }
-			}));
-			return false;
-		}
-	},
-
-	requestPermission: async () => {
-		set({ permissionState: { hasPermission: false, isRequesting: true } });
-		try {
-			const granted = await chrome.permissions.request({
-				permissions: ['bookmarks']
-			});
 			set({
-				permissionState: { hasPermission: granted, isRequesting: false }
+				loading: false,
+				error: '无法检查书签权限，请重新加载扩展后重试',
+				permissionState: { hasPermission: false, isChecking: false }
 			});
-			if (granted) await get().loadBookmarks();
-			return granted;
-		} catch (error) {
-			console.error('请求权限失败:', error);
-			set({ permissionState: { hasPermission: false, isRequesting: false } });
 			return false;
 		}
 	},
@@ -139,7 +137,7 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 				bookmarkIds.has(id)
 			);
 
-			set({ ...parsedTree, externalBookmarkIds });
+			set({ ...parsedTree, externalBookmarkIds, error: null });
 			if (externalBookmarkIds.length !== currentExternalBookmarkIds.length) {
 				await chrome.storage.local.set({
 					[EXTERNAL_BOOKMARK_IDS_KEY]: externalBookmarkIds
@@ -147,6 +145,7 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 			}
 		} catch (error) {
 			console.error('加载书签失败:', error);
+			set({ error: '书签加载失败，请检查扩展状态后重试' });
 			throw error;
 		} finally {
 			if (!silent) set({ loading: false });
@@ -176,9 +175,44 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 	},
 
 	removeBookmarks: async ids => {
-		await Promise.all(ids.map(id => chrome.bookmarks.remove(id)));
-		await get().setBookmarksExternal(ids, false);
+		const externalBookmarkIds = get().externalBookmarkIds;
+		const snapshots = await captureBookmarkSnapshots(ids, externalBookmarkIds);
+		const results = await Promise.allSettled(
+			ids.map(id => chrome.bookmarks.remove(id))
+		);
+		const removedIds = ids.filter((_, index) => results[index].status === 'fulfilled');
+		const removedIdSet = new Set(removedIds);
+
+		if (removedIds.length) {
+			await get().setBookmarksExternal(removedIds, false);
+			set({ lastUndoAction: createUndoAction(
+				'delete',
+				`已删除 ${removedIds.length} 个书签`,
+				snapshots.filter(snapshot => removedIdSet.has(snapshot.id))
+			) });
+		}
 		await get().loadBookmarks({ silent: true });
+		if (removedIds.length !== ids.length) {
+			throw new Error(`已删除 ${removedIds.length} 项，${ids.length - removedIds.length} 项删除失败`);
+		}
+	},
+
+	removeEmptyFolders: async ids => {
+		const snapshots = await captureBookmarkSnapshots(ids, []);
+		const results = await Promise.allSettled(ids.map(id => chrome.bookmarks.remove(id)));
+		const removedIds = ids.filter((_, index) => results[index].status === 'fulfilled');
+		const removedIdSet = new Set(removedIds);
+		if (removedIds.length) {
+			set({ lastUndoAction: createUndoAction(
+				'delete',
+				`已删除 ${removedIds.length} 个空文件夹`,
+				snapshots.filter(snapshot => removedIdSet.has(snapshot.id))
+			) });
+		}
+		await get().loadBookmarks({ silent: true });
+		if (removedIds.length !== ids.length) {
+			throw new Error(`已删除 ${removedIds.length} 项，${ids.length - removedIds.length} 项删除失败`);
+		}
 	},
 
 	moveBookmark: async (id, destination) => {
@@ -186,10 +220,25 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 	},
 
 	moveBookmarks: async (ids, destination) => {
-		for (const id of ids) {
-			await chrome.bookmarks.move(id, destination);
+		const externalBookmarkIds = get().externalBookmarkIds;
+		const snapshots = await captureBookmarkSnapshots(ids, externalBookmarkIds);
+		const movedIds: string[] = [];
+		try {
+			for (const id of ids) {
+				await chrome.bookmarks.move(id, destination);
+				movedIds.push(id);
+			}
+		} finally {
+			if (movedIds.length) {
+				const movedIdSet = new Set(movedIds);
+				set({ lastUndoAction: createUndoAction(
+					'move',
+					`已移动 ${movedIds.length} 个书签`,
+					snapshots.filter(snapshot => movedIdSet.has(snapshot.id))
+				) });
+			}
+			await get().loadBookmarks({ silent: true });
 		}
-		await get().loadBookmarks({ silent: true });
 	},
 
 	moveBookmarkOptimized: async (draggedId, targetId) => {
@@ -218,11 +267,33 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 				parentId: dragged.parentId,
 				index
 			});
+			set({ lastUndoAction: createUndoAction(
+				'move',
+				'已调整书签顺序',
+				[toBookmarkSnapshot(dragged, get().externalBookmarkIds)]
+			) });
 			await get().loadBookmarks({ silent: true });
 		} catch (error) {
 			await get().loadBookmarks({ silent: true });
 			console.error('移动书签失败:', error);
 			throw error;
 		}
-	}
+	},
+	undoLastAction: async () => {
+		const action = get().lastUndoAction;
+		if (!action || get().isUndoing) return;
+		set({ isUndoing: true });
+		try {
+			const { restoredExternalIds, references } = await restoreBookmarkAction(action);
+			await useWorkspaceStore.getState().replaceBookmarkReferences(references);
+			if (restoredExternalIds.length) {
+				await get().setBookmarksExternal(restoredExternalIds, true);
+			}
+			set({ lastUndoAction: null });
+			await get().loadBookmarks({ silent: true });
+		} finally {
+			set({ isUndoing: false });
+		}
+	},
+	clearUndoAction: () => set({ lastUndoAction: null })
 }));

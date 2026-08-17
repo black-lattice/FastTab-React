@@ -9,6 +9,9 @@ console.log('🔍 验证 FastTab React 扩展文件完整性...');
 console.log('==========================================');
 
 const distDir = path.join(__dirname, '..', 'dist');
+const packageJson = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')
+);
 const requiredFiles = [
   'manifest.json',
   'icons/icon16.png',
@@ -70,6 +73,12 @@ if (fs.existsSync(manifestPath)) {
     console.log(`   - 版本: ${manifest.version}`);
     console.log(`   - 新标签页: ${manifest.chrome_url_overrides?.newtab}`);
     console.log(`   - 弹出窗口: ${manifest.action?.default_popup}`);
+    if (manifest.version !== packageJson.version) {
+      console.log(`❌ manifest.json 与 package.json 版本不一致`);
+      allGood = false;
+    } else {
+      console.log(`✅ manifest.json 与 package.json 版本一致`);
+    }
   } catch (error) {
     console.log(`❌ manifest.json 格式错误: ${error.message}`);
     allGood = false;

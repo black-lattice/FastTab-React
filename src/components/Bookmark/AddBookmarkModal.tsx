@@ -4,6 +4,7 @@ import { useBookmarkStore } from '../../store/bookmarkStore';
 import { useUIStore } from '../../store/uiStore';
 import { flattenBookmarkFolders } from '../../utils/bookmarkTree';
 import { normalizeBookmarkUrl } from '../../utils/bookmarkUrl';
+import { useShallow } from 'zustand/react/shallow';
 
 const AddBookmarkModal: React.FC = () => {
 	const {
@@ -11,8 +12,18 @@ const AddBookmarkModal: React.FC = () => {
 		folders,
 		createBookmark,
 		setBookmarkExternal
-	} = useBookmarkStore();
-	const { isAddBookmarkOpen, closeAddBookmark } = useUIStore();
+	} = useBookmarkStore(useShallow(state => ({
+		bookmarksBarId: state.bookmarksBarId,
+		folders: state.folders,
+		createBookmark: state.createBookmark,
+		setBookmarkExternal: state.setBookmarkExternal
+	})));
+	const { isAddBookmarkOpen, closeAddBookmark } = useUIStore(
+		useShallow(state => ({
+			isAddBookmarkOpen: state.isAddBookmarkOpen,
+			closeAddBookmark: state.closeAddBookmark
+		}))
+	);
 	const [title, setTitle] = useState('');
 	const [url, setUrl] = useState('');
 	const [folderId, setFolderId] = useState('');

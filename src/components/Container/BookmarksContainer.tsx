@@ -5,6 +5,10 @@ import BookmarkCard from '../Bookmark/BookmarkCard';
 import { EditModal } from '../UI/EditModal/EditModal';
 import { useBookmarkStore } from '../../store/bookmarkStore';
 import { useUIStore } from '../../store/uiStore';
+import { useLayoutStore } from '../../store/layoutStore';
+import { HOME_WORKSPACE_ID, useWorkspaceStore } from '../../store/workspaceStore';
+import { getWorkspaceContent } from '../../utils/workspaceContent';
+import { useShallow } from 'zustand/react/shallow';
 
 export const BookmarksContainer: React.FC = () => {
 	const {
@@ -13,24 +17,53 @@ export const BookmarksContainer: React.FC = () => {
 		externalBookmarkIds,
 		rootBookmarkIds,
 		loading,
+		error,
 		permissionState,
-		requestPermission
-	} = useBookmarkStore();
+		checkPermission,
+		loadBookmarks,
+		updateBookmark
+	} = useBookmarkStore(useShallow(state => ({
+		folders: state.folders,
+		bookmarks: state.bookmarks,
+		externalBookmarkIds: state.externalBookmarkIds,
+		rootBookmarkIds: state.rootBookmarkIds,
+		loading: state.loading,
+		error: state.error,
+		permissionState: state.permissionState,
+		checkPermission: state.checkPermission,
+		loadBookmarks: state.loadBookmarks,
+		updateBookmark: state.updateBookmark
+	})));
 
 	const {
 		isEditModalOpen,
 		editingBookmark,
 		closeEditModal,
 		openAddBookmark
-	} = useUIStore();
-	const { updateBookmark } = useBookmarkStore();
-	const homeBookmarkIds = new Set([
-		...rootBookmarkIds,
-		...externalBookmarkIds
-	]);
-	const homeBookmarks = bookmarks.filter(bookmark =>
-		homeBookmarkIds.has(bookmark.id)
+	} = useUIStore(useShallow(state => ({
+		isEditModalOpen: state.isEditModalOpen,
+		editingBookmark: state.editingBookmark,
+		closeEditModal: state.closeEditModal,
+		openAddBookmark: state.openAddBookmark
+	})));
+	const openWorkspaceManager = useUIStore(state => state.openWorkspaceManager);
+	const folderPosition = useLayoutStore(state => state.settings.folderPosition);
+	const workspaces = useWorkspaceStore(state => state.workspaces);
+	const activeWorkspaceId = useWorkspaceStore(state => state.activeWorkspaceId);
+	const hiddenHomeFolderIds = useWorkspaceStore(state => state.hiddenHomeFolderIds);
+	const activeWorkspace = activeWorkspaceId === HOME_WORKSPACE_ID
+		? undefined
+		: workspaces.find(workspace => workspace.id === activeWorkspaceId);
+	const workspaceContent = getWorkspaceContent(
+		bookmarks,
+		folders,
+		rootBookmarkIds,
+		externalBookmarkIds,
+		hiddenHomeFolderIds,
+		activeWorkspace
 	);
+	const homeBookmarks = workspaceContent.bookmarks;
+	const visibleFolders = workspaceContent.folders;
 
 	const handleSave = async (changes: Partial<Bookmark>) => {
 		if (editingBookmark) {
@@ -38,20 +71,61 @@ export const BookmarksContainer: React.FC = () => {
 			closeEditModal();
 		}
 	};
+	const retryLoading = async () => {
+		const hasPermission = await checkPermission();
+		if (hasPermission) await loadBookmarks();
+	};
+	const openExtensionSettings = () => {
+		void chrome.tabs.create({
+			url: `chrome://extensions/?id=${chrome.runtime.id}`
+		});
+	};
+	const bookmarkCards = homeBookmarks.map(bookmark => (
+		<BookmarkCard key={bookmark.id} bookmark={bookmark} />
+	));
+	const folderCards = visibleFolders.map((folder: Bookmark) => (
+		<BookmarkFolder
+			key={folder.id}
+			folder={folder}
+			hiddenBookmarkIds={externalBookmarkIds}
+		/>
+	));
 
 	if (!permissionState.hasPermission) {
 		return (
 			<div className='text-center p-4 text-[var(--text-primary)] max-w-md mx-auto'>
 				<h2 className='text-3xl mb-4'>欢迎使用 FastTab</h2>
-				<p className='text-base mb-5 text-[var(--text-secondary)] leading-relaxed'>
-					FastTab 只在本机读取和整理浏览器书签，不会上传书签网址
-				</p>
+					<p className='text-base mb-5 text-[var(--text-secondary)] leading-relaxed'>
+						FastTab 需要已在安装时声明的书签权限；数据只在本机读取和整理
+					</p>
+					<div className='flex flex-wrap justify-center gap-2'>
+						<button
+							className='theme-glass min-h-11 border-2 text-[var(--text-primary)] px-4 py-2 rounded-lg text-sm font-medium cursor-pointer disabled:opacity-60'
+							onClick={() => void retryLoading()}
+							disabled={permissionState.isChecking}>
+							{permissionState.isChecking ? '检查中…' : '重新检查'}
+						</button>
+						<button
+							className='theme-secondary-button min-h-11 rounded-lg px-4 py-2 text-sm cursor-pointer'
+							onClick={openExtensionSettings}>
+							打开扩展设置
+						</button>
+					</div>
+				</div>
+			);
+		}
+
+	if (error) {
+		return (
+			<div className='theme-panel mx-auto max-w-md rounded-2xl p-6 text-center'>
+				<h2 className='mb-2 text-xl font-semibold'>暂时无法读取书签</h2>
+				<p className='mb-5 text-sm leading-relaxed text-[var(--text-secondary)]'>{error}</p>
 				<button
-					className='theme-glass min-h-11 border-2 text-[var(--text-primary)] px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-300 backdrop-blur-md hover:bg-[var(--surface-muted)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed'
-					onClick={() => requestPermission()}
-					disabled={permissionState.isRequesting}
-				>
-					{permissionState.isRequesting ? '请求中...' : '授权访问书签'}
+					type='button'
+					className='min-h-11 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60'
+					onClick={() => void retryLoading()}
+					disabled={loading}>
+					{loading ? '重试中…' : '重新加载'}
 				</button>
 			</div>
 		);
@@ -66,18 +140,18 @@ export const BookmarksContainer: React.FC = () => {
 		);
 	}
 
-	if (folders.length === 0 && homeBookmarks.length === 0) {
-		return (
-			<div className='text-center p-4 text-[var(--text-primary)]'>
-				<h3 className='text-2xl mb-2.5'>暂无书签</h3>
-				<p className='mb-5 text-base text-[var(--text-secondary)] leading-relaxed'>
-					添加一个常用网址，开始搭建你的新标签页
-				</p>
-				<button
+	if (visibleFolders.length === 0 && homeBookmarks.length === 0) {
+			return (
+				<div className='text-center p-4 text-[var(--text-primary)]'>
+					<h3 className='text-2xl mb-2.5'>{activeWorkspace ? '这个工作区还是空的' : '暂无书签'}</h3>
+					<p className='mb-5 text-base text-[var(--text-secondary)] leading-relaxed'>
+						{activeWorkspace ? '选择要在这里显示的书签或文件夹' : '添加一个常用网址，开始搭建你的新标签页'}
+					</p>
+					<button
 					type='button'
 					className='min-h-11 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
-					onClick={openAddBookmark}>
-					添加第一个书签
+						onClick={activeWorkspace ? openWorkspaceManager : openAddBookmark}>
+						{activeWorkspace ? '配置工作区' : '添加第一个书签'}
 				</button>
 			</div>
 		);
@@ -87,19 +161,10 @@ export const BookmarksContainer: React.FC = () => {
 		<>
 			<main className='w-full flex flex-col items-center'>
 				<section className='w-full mb-1.5'>
-					<div className='grid grid-cols-[repeat(auto-fill,80px)] justify-start w-full gap-4'>
-						{homeBookmarks.map(bookmark => (
-							<BookmarkCard key={bookmark.id} bookmark={bookmark} />
-						))}
-						{/* 文件夹紧接外显书签排列，填满当前行后再换行 */}
-						{folders.map((folder: Bookmark) => (
-							<BookmarkFolder
-								key={folder.id}
-								folder={folder}
-								hiddenBookmarkIds={externalBookmarkIds}
-							/>
-						))}
-					</div>
+						<div className='bookmark-grid bookmark-home-grid grid w-full'>
+							{folderPosition === 'folders-first' ? folderCards : bookmarkCards}
+							{folderPosition === 'folders-first' ? bookmarkCards : folderCards}
+						</div>
 				</section>
 			</main>
 

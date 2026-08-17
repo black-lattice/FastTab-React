@@ -1,13 +1,13 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { Button, Tooltip } from 'antd';
 import { PlusOutlined, SettingOutlined } from '@ant-design/icons';
 import { useBookmarkStore } from '../../store/bookmarkStore';
 import { useUIStore } from '../../store/uiStore';
+import { useShallow } from 'zustand/react/shallow';
 
 const AddBookmarkModal = lazy(() => import('./AddBookmarkModal'));
-const BookmarkManagementModal = lazy(
-	() => import('./BookmarkManagementModal')
-);
+const loadBookmarkManagementModal = () => import('./BookmarkManagementModal');
+const BookmarkManagementModal = lazy(loadBookmarkManagementModal);
 
 /**
  * 书签管理面板组件
@@ -19,10 +19,32 @@ const BookmarkManager: React.FC = () => {
 		isBookmarkManagerOpen,
 		openBookmarkManager,
 		openAddBookmark
-	} = useUIStore();
+	} = useUIStore(useShallow(state => ({
+		isAddBookmarkOpen: state.isAddBookmarkOpen,
+		isBookmarkManagerOpen: state.isBookmarkManagerOpen,
+		openBookmarkManager: state.openBookmarkManager,
+		openAddBookmark: state.openAddBookmark
+	})));
 	const hasPermission = useBookmarkStore(
 		state => state.permissionState.hasPermission
 	);
+
+	useEffect(() => {
+		if (!hasPermission) return;
+		const idleWindow = window as unknown as {
+			requestIdleCallback?: Window['requestIdleCallback'];
+			cancelIdleCallback?: Window['cancelIdleCallback'];
+		};
+		if (idleWindow.requestIdleCallback) {
+			const idleId = idleWindow.requestIdleCallback(
+				() => void loadBookmarkManagementModal(),
+				{ timeout: 2000 }
+			);
+			return () => idleWindow.cancelIdleCallback?.(idleId);
+		}
+		const timer = window.setTimeout(() => void loadBookmarkManagementModal(), 800);
+		return () => window.clearTimeout(timer);
+	}, [hasPermission]);
 
 	return (
 		<div className='fixed right-5 bottom-20 z-40 flex flex-col gap-3'>

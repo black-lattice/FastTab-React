@@ -15,10 +15,22 @@ export default defineConfig({
 				popup: 'src/popup.html'
 			},
 			output: {
-				// 手动分割块，但不包括CSS
-				manualChunks: {
-					// 将React相关库分离到vendor chunk
-					vendor: ['react', 'react-dom']
+				manualChunks(id) {
+					if (id.includes('pinyin-pro')) return 'bookmark-pinyin';
+					if (
+						id.includes('commonjsHelpers') ||
+						id.includes('/react/') ||
+						id.includes('/react-dom/') ||
+						id.includes('/scheduler/')
+					) return 'vendor';
+					if (
+						id.includes('/antd/') ||
+						id.includes('/@ant-design/') ||
+						id.includes('/@rc-component/') ||
+						id.includes('/rc-') ||
+						id.includes('/react-is/')
+					) return 'antd';
+					if (id.includes('/zustand/')) return 'state';
 				}
 			}
 		}

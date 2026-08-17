@@ -1,12 +1,10 @@
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
 	Button,
 	Checkbox,
 	Dropdown,
 	Empty,
-	Input,
 	Modal,
-	Segmented,
 	Space,
 	Switch,
 	Tooltip,
@@ -16,33 +14,22 @@ import {
 	DeleteOutlined,
 	EyeInvisibleOutlined,
 	EyeOutlined,
-	FolderOpenOutlined,
-	FolderOutlined,
-	SearchOutlined
+	FolderOutlined
 } from '@ant-design/icons';
-import { Bookmark } from '../../types';
 import { useBookmarkStore } from '../../store/bookmarkStore';
 import { useUIStore } from '../../store/uiStore';
-import { useFavicon } from '../../hooks/useFavicon';
 import { flattenBookmarkFolders } from '../../utils/bookmarkTree';
+import { BookmarkCleanupModal } from './BookmarkCleanupModal';
+import {
+	BookmarkFavicon,
+	BookmarkFolderSidebar,
+	BookmarkManagerHeader,
+	BookmarkManagerToolbar
+} from './BookmarkManagementParts';
+import type { BookmarkDisplayFilter } from './BookmarkManagementParts';
+import { useShallow } from 'zustand/react/shallow';
 
-type DisplayFilter = 'all' | 'external' | 'internal';
-
-const BookmarkFavicon: React.FC<{ bookmark: Bookmark }> = ({ bookmark }) => {
-	const { faviconUrl, handleFaviconError } = useFavicon(bookmark.url);
-	return faviconUrl ? (
-		<img
-			src={faviconUrl}
-			alt=''
-			onError={handleFaviconError}
-			className='bookmark-favicon-image h-9 w-9 rounded-lg object-contain'
-		/>
-	) : (
-		<div className='theme-preview-item flex h-9 w-9 items-center justify-center rounded-lg font-semibold'>
-			{bookmark.title.trim().charAt(0).toUpperCase() || '•'}
-		</div>
-	);
-};
+const BOOKMARK_RENDER_BATCH_SIZE = 20;
 
 const BookmarkManagementModal: React.FC = () => {
 	const {
@@ -53,22 +40,35 @@ const BookmarkManagementModal: React.FC = () => {
 		removeBookmarks,
 		moveBookmarks,
 		setBookmarksExternal
-	} = useBookmarkStore();
+	} = useBookmarkStore(useShallow(state => ({
+		bookmarks: state.bookmarks,
+		folders: state.folders,
+		rootBookmarkIds: state.rootBookmarkIds,
+		externalBookmarkIds: state.externalBookmarkIds,
+		removeBookmarks: state.removeBookmarks,
+		moveBookmarks: state.moveBookmarks,
+		setBookmarksExternal: state.setBookmarksExternal
+	})));
 	const {
 		isBookmarkManagerOpen,
 		closeBookmarkManager,
 		selectedBookmarkIds,
 		setSelectedBookmarkIds
-	} = useUIStore();
+	} = useUIStore(useShallow(state => ({
+		isBookmarkManagerOpen: state.isBookmarkManagerOpen,
+		closeBookmarkManager: state.closeBookmarkManager,
+		selectedBookmarkIds: state.selectedBookmarkIds,
+		setSelectedBookmarkIds: state.setSelectedBookmarkIds
+	})));
 	const [searchText, setSearchText] = useState('');
 	const [selectedFolderId, setSelectedFolderId] = useState('all');
-	const [displayFilter, setDisplayFilter] = useState<DisplayFilter>('all');
+	const [displayFilter, setDisplayFilter] = useState<BookmarkDisplayFilter>('all');
+	const [isCleanupOpen, setIsCleanupOpen] = useState(false);
+	const [renderLimit, setRenderLimit] = useState(BOOKMARK_RENDER_BATCH_SIZE);
+	const listRef = useRef<HTMLElement>(null);
 	const deferredSearchText = useDeferredValue(searchText.trim().toLowerCase());
 	const flatFolders = useMemo(() => flattenBookmarkFolders(folders), [folders]);
-	const rootBookmarkIdSet = useMemo(
-		() => new Set(rootBookmarkIds),
-		[rootBookmarkIds]
-	);
+	const rootBookmarkIdSet = useMemo(() => new Set(rootBookmarkIds), [rootBookmarkIds]);
 	const homeBookmarkIdSet = useMemo(
 		() => new Set([...rootBookmarkIds, ...externalBookmarkIds]),
 		[rootBookmarkIds, externalBookmarkIds]
@@ -107,6 +107,19 @@ const BookmarkManagementModal: React.FC = () => {
 		homeBookmarkIdSet,
 		selectedFolderId
 	]);
+	const renderedBookmarks = useMemo(
+		() => visibleBookmarks.slice(0, renderLimit),
+		[renderLimit, visibleBookmarks]
+	);
+	const selectedBookmarkIdSet = useMemo(
+		() => new Set(selectedBookmarkIds),
+		[selectedBookmarkIds]
+	);
+
+	useEffect(() => {
+		setRenderLimit(BOOKMARK_RENDER_BATCH_SIZE);
+		listRef.current?.scrollTo({ top: 0 });
+	}, [deferredSearchText, displayFilter, selectedFolderId]);
 
 	const setExternalState = async (
 		ids: string[],
@@ -138,7 +151,7 @@ const BookmarkManagementModal: React.FC = () => {
 	const deleteSelected = () => {
 		Modal.confirm({
 			title: '删除选中的书签？',
-			content: `将从浏览器书签中删除 ${selectedBookmarkIds.length} 项，此操作无法撤销。`,
+			content: `将从浏览器书签中删除 ${selectedBookmarkIds.length} 项，删除后可在页面底部短暂撤销。`,
 			okText: '删除',
 			okType: 'danger',
 			cancelText: '取消',
@@ -154,34 +167,38 @@ const BookmarkManagementModal: React.FC = () => {
 		});
 	};
 
-	const moveItems = flatFolders.map(({ folder, depth }) => ({
-		key: folder.id,
-		label: `${'　'.repeat(depth)}${folder.title}`,
-		icon: <FolderOutlined />
-	}));
+	const moveItems = useMemo(
+		() => flatFolders.map(({ folder, depth }) => ({
+			key: folder.id,
+			label: `${'　'.repeat(depth)}${folder.title}`,
+			icon: <FolderOutlined />
+		})),
+		[flatFolders]
+	);
 	const allVisibleSelected =
 		visibleBookmarks.length > 0 &&
-		visibleBookmarks.every(bookmark => selectedBookmarkIds.includes(bookmark.id));
+		visibleBookmarks.every(bookmark => selectedBookmarkIdSet.has(bookmark.id));
 	const visibleSelectedCount = visibleBookmarks.filter(bookmark =>
-		selectedBookmarkIds.includes(bookmark.id)
+		selectedBookmarkIdSet.has(bookmark.id)
 	).length;
+	const handleListScroll = (event: React.UIEvent<HTMLElement>) => {
+		const list = event.currentTarget;
+		if (
+			renderLimit < visibleBookmarks.length &&
+			list.scrollHeight - list.scrollTop - list.clientHeight < 240
+		) {
+			setRenderLimit(current => Math.min(
+				current + BOOKMARK_RENDER_BATCH_SIZE,
+				visibleBookmarks.length
+			));
+		}
+	};
 
 	return (
-		<Modal
+		<>
+			<Modal
 			className='bookmark-manager-modal bookmark-card-manager'
-			title={
-				<div className='flex items-start gap-3'>
-					<div className='flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-500'>
-						<FolderOpenOutlined />
-					</div>
-					<div>
-						<div className='text-lg font-semibold'>书签管理</div>
-						<div className='mt-0.5 text-xs font-normal text-[var(--text-tertiary)]'>
-							搜索、固定到首页或批量整理收藏
-						</div>
-					</div>
-				</div>
-			}
+				title={<BookmarkManagerHeader />}
 			open={isBookmarkManagerOpen}
 			onCancel={closeBookmarkManager}
 			width={1040}
@@ -223,49 +240,29 @@ const BookmarkManagementModal: React.FC = () => {
 					</Space>
 				</div>
 			}>
-			<div className='bookmark-manager-toolbar mb-4 flex flex-wrap items-center gap-3 rounded-xl p-3'>
-				<Input
-					prefix={<SearchOutlined />}
-					placeholder='搜索标题或网址'
-					allowClear
-					className='bookmark-manager-search min-w-56 flex-1'
-					value={searchText}
-					onChange={event => setSearchText(event.target.value)}
+				<BookmarkManagerToolbar
+					searchText={searchText}
+					displayFilter={displayFilter}
+					homeCount={homeBookmarkIdSet.size}
+					onSearchChange={setSearchText}
+					onFilterChange={setDisplayFilter}
+					onCleanup={() => setIsCleanupOpen(true)}
 				/>
-				<Segmented
-					value={displayFilter}
-					onChange={value => setDisplayFilter(value as DisplayFilter)}
-					options={[
-						{ label: '全部', value: 'all' },
-						{ label: `首页显示 ${homeBookmarkIdSet.size}`, value: 'external' },
-						{ label: '文件夹内', value: 'internal' }
-					]}
-				/>
-			</div>
 
 			<div className='bookmark-manager-layout'>
-				<aside className='bookmark-folder-sidebar' aria-label='书签文件夹'>
-					<button
-						className={`bookmark-folder-option ${selectedFolderId === 'all' ? 'is-active' : ''}`}
-						onClick={() => setSelectedFolderId('all')}>
-						<FolderOpenOutlined />
-						<span>全部书签</span>
-						<em>{bookmarks.length}</em>
-					</button>
-					{flatFolders.map(({ folder, depth }) => (
-						<button
-							key={folder.id}
-							className={`bookmark-folder-option ${selectedFolderId === folder.id ? 'is-active' : ''}`}
-							style={{ paddingLeft: `${12 + depth * 14}px` }}
-							onClick={() => setSelectedFolderId(folder.id)}>
-							<FolderOutlined />
-							<span title={folder.title}>{folder.title}</span>
-							<em>{folderCounts.get(folder.id) || 0}</em>
-						</button>
-					))}
-				</aside>
+					<BookmarkFolderSidebar
+						folders={flatFolders}
+						folderCounts={folderCounts}
+						selectedFolderId={selectedFolderId}
+						totalCount={bookmarks.length}
+						onSelect={setSelectedFolderId}
+					/>
 
-				<section className='bookmark-card-list' aria-label='书签列表'>
+				<section
+					ref={listRef}
+					className='bookmark-card-list'
+					aria-label='书签列表'
+					onScroll={handleListScroll}>
 					<div className='mb-3 flex items-center justify-between'>
 						<Checkbox
 							checked={allVisibleSelected}
@@ -286,8 +283,8 @@ const BookmarkManagementModal: React.FC = () => {
 
 					{visibleBookmarks.length ? (
 						<div className='grid grid-cols-1 gap-3 lg:grid-cols-2'>
-							{visibleBookmarks.map(bookmark => {
-								const checked = selectedBookmarkIds.includes(bookmark.id);
+							{renderedBookmarks.map(bookmark => {
+								const checked = selectedBookmarkIdSet.has(bookmark.id);
 								const isRootBookmark = rootBookmarkIdSet.has(bookmark.id);
 								return (
 									<article
@@ -323,13 +320,26 @@ const BookmarkManagementModal: React.FC = () => {
 									</article>
 								);
 							})}
+							{renderedBookmarks.length < visibleBookmarks.length && (
+								<button
+									type='button'
+									className='bookmark-manager-load-more col-span-full'
+									onClick={() => setRenderLimit(current => Math.min(
+										current + BOOKMARK_RENDER_BATCH_SIZE,
+										visibleBookmarks.length
+									))}>
+									继续显示（剩余 {visibleBookmarks.length - renderedBookmarks.length} 项）
+								</button>
+							)}
 						</div>
 					) : (
 						<Empty description='没有符合条件的书签' className='mt-20' />
 					)}
 				</section>
 			</div>
-		</Modal>
+			</Modal>
+			<BookmarkCleanupModal open={isCleanupOpen} onClose={() => setIsCleanupOpen(false)} />
+		</>
 	);
 };
 

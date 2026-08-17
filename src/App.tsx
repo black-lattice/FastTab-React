@@ -2,10 +2,16 @@ import { SearchSection } from './components/UI/SearchSection/SearchSection';
 import { BookmarksContainer } from './components/Container/BookmarksContainer';
 import { BackgroundSettings } from './components/UI/BackgroundSettings/BackgroundSettings';
 import BookmarkManager from './components/Bookmark/BookmarkManager';
+import { UndoActionBar } from './components/UI/UndoActionBar/UndoActionBar';
+import { WorkspaceBar } from './components/Workspace/WorkspaceBar';
 import { useBookmarkStore } from './store/bookmarkStore';
 import { useBackgroundStore } from './store/backgroundStore';
+import { getLayoutMetrics, useLayoutStore } from './store/layoutStore';
+import { HOME_WORKSPACE_ID, useWorkspaceStore } from './store/workspaceStore';
+import { getWorkspaceContent } from './utils/workspaceContent';
 import { useEffect, useRef, useState } from 'react';
 import { ConfigProvider, theme } from 'antd';
+import { useShallow } from 'zustand/react/shallow';
 
 const LAYOUT_COLUMNS_KEY = 'fasttab-layout-columns';
 const LAYOUT_ITEMS_KEY = 'fasttab-layout-items';
@@ -30,8 +36,28 @@ function App() {
 		externalBookmarkIds,
 		rootBookmarkIds,
 		permissionState
-	} = useBookmarkStore();
-	const { loadSettings: loadBackgroundSettings, resolvedTheme } = useBackgroundStore();
+	} = useBookmarkStore(useShallow(state => ({
+		checkPermission: state.checkPermission,
+		loadBookmarks: state.loadBookmarks,
+		loadDisplaySettings: state.loadDisplaySettings,
+		folders: state.folders,
+		bookmarks: state.bookmarks,
+		externalBookmarkIds: state.externalBookmarkIds,
+		rootBookmarkIds: state.rootBookmarkIds,
+		permissionState: state.permissionState
+	})));
+	const { loadSettings: loadBackgroundSettings, resolvedTheme } = useBackgroundStore(
+		useShallow(state => ({
+			loadSettings: state.loadSettings,
+			resolvedTheme: state.resolvedTheme
+		}))
+	);
+	const layoutSettings = useLayoutStore(state => state.settings);
+	const loadLayoutSettings = useLayoutStore(state => state.loadSettings);
+	const workspaces = useWorkspaceStore(state => state.workspaces);
+	const activeWorkspaceId = useWorkspaceStore(state => state.activeWorkspaceId);
+	const hiddenHomeFolderIds = useWorkspaceStore(state => state.hiddenHomeFolderIds);
+	const loadWorkspaces = useWorkspaceStore(state => state.loadWorkspaces);
 
 	useEffect(() => {
 		if (initializationStarted.current) return;
@@ -39,10 +65,12 @@ function App() {
 
 		const init = async () => {
 			try {
-				await Promise.all([
-					loadBackgroundSettings(),
-					loadDisplaySettings()
-				]);
+					await Promise.all([
+						loadBackgroundSettings(),
+						loadDisplaySettings(),
+						loadLayoutSettings(),
+						loadWorkspaces()
+					]);
 
 				const hasPermission = await checkPermission();
 				if (hasPermission) {
@@ -52,12 +80,14 @@ function App() {
 				setIsAppReady(true);
 			}
 		};
-		init();
+			void init().catch(() => undefined);
 	}, [
 		checkPermission,
 		loadBookmarks,
 		loadDisplaySettings,
-		loadBackgroundSettings
+		loadBackgroundSettings,
+		loadLayoutSettings,
+		loadWorkspaces
 	]);
 
 	useEffect(() => {
@@ -106,21 +136,30 @@ function App() {
 		};
 	}, [isAppReady, loadBookmarks, permissionState.hasPermission]);
 
-	const homeBookmarkIds = new Set([
-		...rootBookmarkIds,
-		...externalBookmarkIds
-	]);
-	const visibleBookmarkCount = bookmarks.filter(bookmark =>
-		homeBookmarkIds.has(bookmark.id)
-	).length;
-	const visibleItemCount = visibleBookmarkCount + folders.length;
-	const visibleColumnCount = Math.min(Math.max(visibleItemCount, 1), 12);
+	const activeWorkspace = activeWorkspaceId === HOME_WORKSPACE_ID
+		? undefined
+		: workspaces.find(workspace => workspace.id === activeWorkspaceId);
+	const workspaceContent = getWorkspaceContent(
+		bookmarks,
+		folders,
+		rootBookmarkIds,
+		externalBookmarkIds,
+		hiddenHomeFolderIds,
+		activeWorkspace
+	);
+	const visibleItemCount = workspaceContent.bookmarks.length + workspaceContent.folders.length;
+	const visibleColumnCount = Math.min(
+		Math.max(visibleItemCount, 1),
+		layoutSettings.maxColumns
+	);
 	const renderedColumnCount = isAppReady
 		? visibleColumnCount
-		: initialColumnCount;
+		: Math.min(initialColumnCount, layoutSettings.maxColumns);
+	const layoutMetrics = getLayoutMetrics(layoutSettings);
 	const contentWidth = Math.max(
-		360,
-		renderedColumnCount * 80 + (renderedColumnCount - 1) * 16
+		520,
+		renderedColumnCount * layoutMetrics.cellSize +
+			(renderedColumnCount - 1) * layoutMetrics.gridGap
 	);
 
 	useEffect(() => {
@@ -148,14 +187,15 @@ function App() {
 					className='w-full flex flex-col pt-[clamp(72px,14vh,150px)] pb-28'
 					style={{ maxWidth: `${contentWidth}px` }}>
 					{isAppReady ? (
-						<>
-							<SearchSection />
-							<BookmarksContainer />
+							<>
+								<SearchSection />
+								<WorkspaceBar />
+								<BookmarksContainer />
 						</>
 					) : (
 						<div className='fasttab-skeleton' aria-label='正在加载新标签页'>
 							<div className='skeleton-search' />
-							<div className='grid grid-cols-[repeat(auto-fill,80px)] justify-start gap-4'>
+								<div className='bookmark-grid grid justify-start'>
 								{Array.from({ length: initialItemCount }).map((_, index) => (
 									<div key={index} className='skeleton-bookmark'>
 										<div className='skeleton-bookmark-icon' />
@@ -166,9 +206,10 @@ function App() {
 						</div>
 					)}
 				</div>
-				{isAppReady && <BackgroundSettings />}
-				{isAppReady && <BookmarkManager />}
-			</div>
+					{isAppReady && <BackgroundSettings />}
+					{isAppReady && <BookmarkManager />}
+					{isAppReady && <UndoActionBar />}
+				</div>
 		</ConfigProvider>
 	);
 }

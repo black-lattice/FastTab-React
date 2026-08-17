@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { Modal, message } from 'antd';
 import {
 	DeleteOutlined,
@@ -10,14 +10,16 @@ import { useDragDrop } from '../../hooks/useDragDrop';
 import { useFavicon } from '../../hooks/useFavicon';
 import { useBookmarkStore } from '../../store/bookmarkStore';
 import { useUIStore } from '../../store/uiStore';
+import { useSearchStore } from '../../store/searchStore';
 
 interface BookmarkCardProps {
 	bookmark: Bookmark;
 }
 
 const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({ bookmark }) => {
-	const { removeBookmark } = useBookmarkStore();
-	const { openEditModal } = useUIStore();
+	const removeBookmark = useBookmarkStore(state => state.removeBookmark);
+	const openEditModal = useUIStore(state => state.openEditModal);
+	const recordBookmarkVisit = useSearchStore(state => state.recordBookmarkVisit);
 	const {
 		handleDragStart,
 		handleDragOver,
@@ -25,16 +27,17 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({ bookmark }) => {
 		handleDrop,
 		handleDragEnd
 	} = useDragDrop();
-	const { faviconUrl, handleFaviconError } = useFavicon(bookmark.url);
-	const [imageLoaded, setImageLoaded] = useState(false);
+	const {
+		faviconUrl,
+		isLoaded: imageLoaded,
+		handleFaviconLoad,
+		handleFaviconError
+	} = useFavicon(bookmark.url);
 
 	const displayTitle = bookmark.title.trim() || bookmark.url;
 	const firstChar = displayTitle.charAt(0).toUpperCase() || '•';
 	const showFallback = !faviconUrl || !imageLoaded;
 
-	const openBookmark = () => {
-		window.location.href = bookmark.url;
-	};
 	const handleEdit = (event: React.MouseEvent) => {
 		event.preventDefault();
 		event.stopPropagation();
@@ -53,8 +56,8 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({ bookmark }) => {
 				try {
 					await removeBookmark(bookmark.id);
 					message.success('书签已删除');
-				} catch {
-					message.error('删除失败，请重试');
+				} catch (error) {
+					message.error(error instanceof Error ? error.message : '删除失败，请重试');
 				}
 			}
 		});
@@ -63,72 +66,63 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({ bookmark }) => {
 	return (
 		<div
 			className='bookmark-card group'
-			role='link'
-			tabIndex={0}
-			aria-label={`打开书签：${displayTitle}`}
 			onDragOver={handleDragOver}
 			onDragLeave={handleDragLeave}
 			onDrop={event => void handleDrop(event, bookmark.id)}
-			onClick={openBookmark}
-			onKeyDown={event => {
-				if (event.target !== event.currentTarget) return;
-				if (event.key === 'Enter' || event.key === ' ') {
-					event.preventDefault();
-					openBookmark();
-				}
-			}}
 			title={`${displayTitle}\n${bookmark.url}`}>
-			<div className='bookmark-card-icon-wrap'>
-				{showFallback && (
-					<div className='bookmark-card-fallback' aria-hidden='true'>
-						{firstChar}
-					</div>
-				)}
-				{faviconUrl && (
-					<img
-						className={`bookmark-favicon-image bookmark-home-favicon relative z-10 object-contain transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-						src={faviconUrl}
-						alt=''
-						onLoad={() => setImageLoaded(true)}
-						onError={() => {
-							setImageLoaded(false);
-							handleFaviconError();
-						}}
-					/>
-				)}
-
-				<div className='bookmark-card-actions'>
-					<button
-						type='button'
-						className='bookmark-card-action bookmark-card-drag-handle'
-						draggable
-						onClick={event => event.stopPropagation()}
-						onDragStart={event => handleDragStart(event, bookmark)}
-						onDragEnd={handleDragEnd}
-						aria-label={`拖动 ${displayTitle} 调整顺序`}
-						title='拖动排序'>
-						<DragOutlined />
-					</button>
-					<button
-						type='button'
-						className='bookmark-card-action'
-						onClick={handleEdit}
-						aria-label={`编辑 ${displayTitle}`}
-						title='编辑书签'>
-						<EditOutlined />
-					</button>
-					<button
-						type='button'
-						className='bookmark-card-action is-danger'
-						onClick={handleDelete}
-						aria-label={`删除 ${displayTitle}`}
-						title='删除书签'>
-						<DeleteOutlined />
-					</button>
+			<a
+				className='bookmark-card-link'
+				href={bookmark.url}
+				onClick={() => recordBookmarkVisit(bookmark.id)}
+				aria-label={`打开书签：${displayTitle}`}>
+				<div className='bookmark-card-icon-wrap'>
+					{showFallback && (
+						<div className='bookmark-card-fallback' aria-hidden='true'>
+							{firstChar}
+						</div>
+					)}
+					{faviconUrl && (
+						<img
+							className={`bookmark-favicon-image bookmark-home-favicon relative z-10 object-contain transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+							src={faviconUrl}
+							alt=''
+							onLoad={handleFaviconLoad}
+							onError={handleFaviconError}
+						/>
+					)}
 				</div>
-			</div>
+				<div className='home-bookmark-title'>{displayTitle}</div>
+			</a>
 
-			<div className='home-bookmark-title'>{displayTitle}</div>
+			<div className='bookmark-card-actions'>
+				<button
+					type='button'
+					className='bookmark-card-action bookmark-card-drag-handle'
+					draggable
+					onClick={event => event.stopPropagation()}
+					onDragStart={event => handleDragStart(event, bookmark)}
+					onDragEnd={handleDragEnd}
+					aria-label={`拖动 ${displayTitle} 调整顺序`}
+					title='拖动排序'>
+					<DragOutlined />
+				</button>
+				<button
+					type='button'
+					className='bookmark-card-action'
+					onClick={handleEdit}
+					aria-label={`编辑 ${displayTitle}`}
+					title='编辑书签'>
+					<EditOutlined />
+				</button>
+				<button
+					type='button'
+					className='bookmark-card-action is-danger'
+					onClick={handleDelete}
+					aria-label={`删除 ${displayTitle}`}
+					title='删除书签'>
+					<DeleteOutlined />
+				</button>
+			</div>
 		</div>
 	);
 };

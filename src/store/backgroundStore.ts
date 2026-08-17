@@ -4,6 +4,10 @@ import {
 	loadBackgroundImage,
 	saveBackgroundImage
 } from '../utils/backgroundStorage';
+import {
+	downloadBackgroundImage,
+	validateBackgroundImage
+} from '../utils/backgroundImage';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type ResolvedTheme = 'light' | 'dark';
@@ -121,9 +125,7 @@ export const useBackgroundStore = create<BackgroundState>((set, get) => ({
 	},
 
 	saveBackgroundFromFile: async (file, themeMode = get().settings.themeMode) => {
-		if (!file.type.startsWith('image/')) {
-			throw new Error('请选择图片文件');
-		}
+		validateBackgroundImage(file);
 		await saveBackgroundImage(file);
 		const settings = {
 			...get().settings,
@@ -147,14 +149,7 @@ export const useBackgroundStore = create<BackgroundState>((set, get) => ({
 			throw new Error('未获得图片站点访问权限');
 		}
 
-		const response = await fetch(normalizedUrl);
-		if (!response.ok) {
-			throw new Error(`图片下载失败（${response.status}）`);
-		}
-		const blob = await response.blob();
-		if (!blob.type.startsWith('image/')) {
-			throw new Error('该地址返回的内容不是图片');
-		}
+		const blob = await downloadBackgroundImage(normalizedUrl);
 		await saveBackgroundImage(blob);
 		const settings = {
 			...get().settings,

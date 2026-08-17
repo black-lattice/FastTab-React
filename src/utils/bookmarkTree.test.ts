@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { parseBookmarksBar } from './bookmarkTree';
+import {
+	collectBookmarks,
+	findBookmarkFolderPath,
+	parseBookmarksBar
+} from './bookmarkTree';
 
 const node = (
 	id: string,
@@ -46,5 +50,27 @@ describe('parseBookmarksBar', () => {
 			folders: [],
 			rootBookmarkIds: []
 		});
+	});
+
+	it('可以定位嵌套文件夹路径并收集可见书签', () => {
+		const root = {
+			id: 'root',
+			title: '根目录',
+			url: '',
+			children: [
+				{ id: 'a', title: 'A', url: 'https://a.test' },
+				{
+					id: 'nested',
+					title: '子目录',
+					url: '',
+					children: [{ id: 'b', title: 'B', url: 'https://b.test' }]
+				}
+			]
+		};
+
+		expect(findBookmarkFolderPath(root, 'nested')?.map(folder => folder.id))
+			.toEqual(['root', 'nested']);
+		expect(collectBookmarks(root.children, new Set(['a'])).map(item => item.id))
+			.toEqual(['b']);
 	});
 });

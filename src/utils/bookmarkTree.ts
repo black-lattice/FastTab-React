@@ -24,6 +24,30 @@ export const flattenBookmarkFolders = (
 		)
 	]);
 
+export const collectBookmarks = (
+	nodes: Bookmark[],
+	excludedIds: Set<string> = new Set()
+): Bookmark[] =>
+	nodes.flatMap(node => {
+		if (node.url) return excludedIds.has(node.id) ? [] : [node];
+		return collectBookmarks(node.children || [], excludedIds);
+	});
+
+export const findBookmarkFolderPath = (
+	root: Bookmark,
+	folderId: string,
+	path: Bookmark[] = []
+): Bookmark[] | null => {
+	const currentPath = [...path, root];
+	if (root.id === folderId) return currentPath;
+	for (const child of root.children || []) {
+		if (child.url) continue;
+		const result = findBookmarkFolderPath(child, folderId, currentPath);
+		if (result) return result;
+	}
+	return null;
+};
+
 const toBookmark = (
 	node: chrome.bookmarks.BookmarkTreeNode
 ): Bookmark => ({
