@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="247 157 758 758" role="img" aria-labelledby="title desc">
+  <title id="title">FastTab Logo｜小尺寸适配版</title>
+  <desc id="desc">保留原始几何路径，通过裁切留白和加粗描边提升页签中的清晰度。</desc>
+  <g fill="none" stroke="#111111" stroke-width="32" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M270 349 L335 324 L354 290 L513 245 L626 308 L739 245 L897 290 L916 324 L981 349 L626 829 Z"/>
+    <path d="M335 324 L626 829"/>
+    <path d="M354 290 L626 829"/>
+    <path d="M458 261 L626 829"/>
+    <path d="M513 245 L626 829"/>
+    <path d="M916 324 L626 829"/>
+    <path d="M897 290 L626 829"/>
+    <path d="M794 261 L626 829"/>
+    <path d="M739 245 L626 829"/>
+    <path d="M626 308 L626 829"/>
+    <path d="M513 245 L626 447 L739 245"/>
+    <path d="M581 360 L626 308 L671 360"/>
+  </g>
+</svg>

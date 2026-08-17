@@ -29,5 +29,5 @@ export interface EditModalState {
 
 export interface PermissionState {
   hasPermission: boolean;
-  isRequesting: boolean;
+  isChecking: boolean;
 }

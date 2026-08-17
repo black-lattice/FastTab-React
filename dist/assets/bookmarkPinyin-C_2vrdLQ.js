@@ -1,0 +1,1 @@
+import{p as r}from"./bookmark-pinyin--er72Ev8.js";const p=o=>o.reduce((n,t)=>{const e=r(t.title,{toneType:"none",type:"array"}).map(i=>i.trim().toLowerCase());return n[t.id]={pinyin:e.join(""),initials:e.map(i=>i.charAt(0)).join("")},n},{});export{p as buildBookmarkPhoneticIndex};

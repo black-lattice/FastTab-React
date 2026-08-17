@@ -4,6 +4,10 @@ import {
 	loadBackgroundImage,
 	saveBackgroundImage
 } from '../utils/backgroundStorage';
+import {
+	downloadBackgroundImage,
+	validateBackgroundImage
+} from '../utils/backgroundImage';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type ResolvedTheme = 'light' | 'dark';
@@ -28,9 +32,9 @@ interface BackgroundState {
 	isLoaded: boolean;
 	loadSettings: () => Promise<void>;
 	saveSettings: (settings: BackgroundSettings) => Promise<void>;
-	saveBackgroundFromFile: (file: File) => Promise<void>;
-	saveBackgroundFromUrl: (url: string) => Promise<void>;
-	clearBackground: () => Promise<void>;
+	saveBackgroundFromFile: (file: File, themeMode?: ThemeMode) => Promise<void>;
+	saveBackgroundFromUrl: (url: string, themeMode?: ThemeMode) => Promise<void>;
+	clearBackground: (themeMode?: ThemeMode) => Promise<void>;
 	applyBackground: (settings: BackgroundSettings) => Promise<void>;
 	applyTheme: (themeMode: ThemeMode) => void;
 }
@@ -120,18 +124,22 @@ export const useBackgroundStore = create<BackgroundState>((set, get) => ({
 		await get().applyBackground(settings);
 	},
 
-	saveBackgroundFromFile: async file => {
-		if (!file.type.startsWith('image/')) {
-			throw new Error('请选择图片文件');
-		}
+	saveBackgroundFromFile: async (file, themeMode = get().settings.themeMode) => {
+		validateBackgroundImage(file);
 		await saveBackgroundImage(file);
-		const settings = { ...get().settings, type: 'image' as const, value: '' };
+		const settings = {
+			...get().settings,
+			type: 'image' as const,
+			value: '',
+			themeMode
+		};
 		await chrome.storage.sync.set({ [STORAGE_KEY]: settings });
 		set({ settings });
+		get().applyTheme(themeMode);
 		await get().applyBackground(settings);
 	},
 
-	saveBackgroundFromUrl: async url => {
+	saveBackgroundFromUrl: async (url, themeMode = get().settings.themeMode) => {
 		const normalizedUrl = url.trim();
 		const originPattern = getOriginPattern(normalizedUrl);
 		const granted = await chrome.permissions.request({
@@ -141,33 +149,29 @@ export const useBackgroundStore = create<BackgroundState>((set, get) => ({
 			throw new Error('未获得图片站点访问权限');
 		}
 
-		const response = await fetch(normalizedUrl);
-		if (!response.ok) {
-			throw new Error(`图片下载失败（${response.status}）`);
-		}
-		const blob = await response.blob();
-		if (!blob.type.startsWith('image/')) {
-			throw new Error('该地址返回的内容不是图片');
-		}
+		const blob = await downloadBackgroundImage(normalizedUrl);
 		await saveBackgroundImage(blob);
 		const settings = {
 			...get().settings,
 			type: 'image' as const,
-			value: normalizedUrl
+			value: normalizedUrl,
+			themeMode
 		};
 		await chrome.storage.sync.set({ [STORAGE_KEY]: settings });
 		set({ settings });
+		get().applyTheme(themeMode);
 		await get().applyBackground(settings);
 	},
 
-	clearBackground: async () => {
+	clearBackground: async (themeMode = get().settings.themeMode) => {
 		await clearBackgroundImage();
 		const settings = {
 			...DEFAULT_SETTINGS,
-			themeMode: get().settings.themeMode
+			themeMode
 		};
 		await chrome.storage.sync.set({ [STORAGE_KEY]: settings });
 		set({ settings });
+		get().applyTheme(themeMode);
 		await get().applyBackground(settings);
 	},
 

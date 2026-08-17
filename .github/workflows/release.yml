@@ -1,0 +1,83 @@
+name: 发布 Chrome 扩展
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: 构建并发布扩展
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.30.3
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 校验版本号
+        shell: bash
+        run: |
+          package_version=$(node -p "require('./package.json').version")
+          manifest_version=$(node -p "require('./manifest.json').version")
+
+          if [[ "${GITHUB_REF_NAME}" != "v${package_version}" ]]; then
+            echo "标签 ${GITHUB_REF_NAME} 与 package.json 版本 v${package_version} 不一致"
+            exit 1
+          fi
+
+          if [[ "${manifest_version}" != "${package_version}" ]]; then
+            echo "manifest.json 与 package.json 的版本号必须一致"
+            exit 1
+          fi
+
+      - name: 执行完整检查
+        run: pnpm check
+
+      - name: 确认 dist 与源码一致
+        run: git diff --exit-code -- dist
+
+      - name: 打包扩展
+        id: package
+        shell: bash
+        run: |
+          archive="fasttab-react-${GITHUB_REF_NAME}.zip"
+          (cd dist && zip -r "../${archive}" .)
+          sha256sum "${archive}" > "${archive}.sha256"
+          echo "archive=${archive}" >> "${GITHUB_OUTPUT}"
+
+      - name: 创建 GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+        run: |
+          release_args=(
+            --verify-tag
+            --title "FastTab React ${GITHUB_REF_NAME}"
+            --generate-notes
+          )
+
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            release_args+=(--prerelease)
+          fi
+
+          gh release create "${GITHUB_REF_NAME}" \
+            "${ARCHIVE}" \
+            "${ARCHIVE}.sha256" \
+            "${release_args[@]}"

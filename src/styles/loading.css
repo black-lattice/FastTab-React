@@ -1,0 +1,70 @@
+.fasttab-skeleton {
+	width: 100%;
+	opacity: 0.72;
+}
+
+.skeleton-search,
+.skeleton-bookmark-icon,
+.skeleton-bookmark-title {
+	position: relative;
+	overflow: hidden;
+	background: var(--surface-muted);
+	border: 1px solid var(--border-color);
+}
+
+.skeleton-search::after,
+.skeleton-bookmark-icon::after,
+.skeleton-bookmark-title::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	transform: translateX(-100%);
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+	animation: fasttab-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-search {
+	height: 52px;
+	margin-bottom: 32px;
+	border-radius: 16px;
+	backdrop-filter: blur(18px);
+	-webkit-backdrop-filter: blur(18px);
+}
+
+.skeleton-bookmark {
+	display: flex;
+	width: var(--bookmark-cell-size);
+	flex-direction: column;
+	align-items: center;
+}
+
+.skeleton-bookmark-icon {
+	width: var(--bookmark-icon-size);
+	height: var(--bookmark-icon-size);
+	border-radius: 16px;
+}
+
+.skeleton-bookmark-title {
+	width: 52px;
+	height: 10px;
+	margin-top: var(--bookmark-title-gap);
+	border-radius: 5px;
+}
+
+[data-bookmark-title-lines='0'] .skeleton-bookmark-title {
+	display: none;
+}
+
+@keyframes fasttab-skeleton-shimmer {
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.skeleton-search::after,
+	.skeleton-bookmark-icon::after,
+	.skeleton-bookmark-title::after {
+		animation: none;
+	}
+}

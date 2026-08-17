@@ -6,7 +6,16 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 
 export default [
+  {
+    ignores: ['dist/**', 'node_modules/**']
+  },
   js.configs.recommended,
+  {
+    files: ['*.config.js', 'scripts/**/*.js'],
+    languageOptions: {
+      globals: globals.node
+    }
+  },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -33,10 +42,12 @@ export default [
     rules: {
       ...tseslint.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true }
-      ],
+      // TypeScript performs this check with type awareness; ESLint's base rule
+      // treats namespace-only usages such as React.FC as undefined.
+      'no-undef': 'off',
+      // The extension has standalone React entry files that intentionally do
+      // not export components for Fast Refresh.
+      'react-refresh/only-export-components': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn'
     }
