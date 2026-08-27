@@ -111,6 +111,7 @@ export const SearchEngineSettingsModal = ({
 									title={`删除 ${engine.label}？`}
 									onConfirm={() => void removeCustomEngine(engine.id)}
 									okText='删除'
+									okButtonProps={{ danger: true }}
 									cancelText='取消'>
 									<button type='button' className='theme-icon-button flex h-11 w-11 items-center justify-center rounded-lg' aria-label={`删除 ${engine.label}`}>
 										<DeleteOutlined />

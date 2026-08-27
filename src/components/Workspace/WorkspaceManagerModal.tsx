@@ -92,7 +92,7 @@ export const WorkspaceManagerModal = () => {
 			title: `删除工作区“${selectedWorkspace.name}”？`,
 			content: '只删除首页分组，不会删除浏览器书签。',
 			okText: '删除',
-			okType: 'danger',
+			okButtonProps: { danger: true },
 			cancelText: '取消',
 			onOk: async () => {
 				await deleteWorkspace(selectedWorkspace.id);

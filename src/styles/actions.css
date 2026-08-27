@@ -29,16 +29,6 @@
 	color: #ffffff !important;
 }
 
-.theme-panel.appearance-settings-panel {
-	z-index: 1;
-	display: flex;
-	max-height: min(560px, calc(100dvh - 96px));
-	flex-direction: column;
-	overflow: hidden;
-	background: var(--manager-surface);
-	box-shadow: 0 24px 70px rgba(15, 23, 42, 0.3);
-}
-
 .appearance-section-tabs {
 	flex: none;
 	border: 1px solid var(--border-color);
@@ -64,14 +54,12 @@
 
 .appearance-settings-content {
 	min-height: 0;
-	overflow-y: auto;
-	overscroll-behavior: contain;
-	scrollbar-gutter: stable;
 }
 
-.appearance-settings-footer {
-	flex: none;
-	margin-top: 16px;
+.appearance-settings-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
 }
 
 .appearance-settings-root {

@@ -153,7 +153,7 @@ const BookmarkManagementModal: React.FC = () => {
 			title: '删除选中的书签？',
 			content: `将从浏览器书签中删除 ${selectedBookmarkIds.length} 项，删除后可在页面底部短暂撤销。`,
 			okText: '删除',
-			okType: 'danger',
+			okButtonProps: { danger: true },
 			cancelText: '取消',
 			onOk: async () => {
 				try {

@@ -50,7 +50,7 @@ const BookmarkCardComponent: React.FC<BookmarkCardProps> = ({ bookmark }) => {
 			title: '删除这个书签？',
 			content: `“${displayTitle}”将从浏览器书签中删除。`,
 			okText: '删除',
-			okType: 'danger',
+			okButtonProps: { danger: true },
 			cancelText: '取消',
 			onOk: async () => {
 				try {

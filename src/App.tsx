@@ -9,12 +9,13 @@ import { useBackgroundStore } from './store/backgroundStore';
 import { getLayoutMetrics, useLayoutStore } from './store/layoutStore';
 import { HOME_WORKSPACE_ID, useWorkspaceStore } from './store/workspaceStore';
 import { getWorkspaceContent } from './utils/workspaceContent';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ConfigProvider, theme } from 'antd';
 import { useShallow } from 'zustand/react/shallow';
 
 const LAYOUT_COLUMNS_KEY = 'fasttab-layout-columns';
 const LAYOUT_ITEMS_KEY = 'fasttab-layout-items';
+const ANT_MODAL_CONFIG = { centered: true };
 
 function App() {
 	const initializationStarted = useRef(false);
@@ -58,6 +59,12 @@ function App() {
 	const activeWorkspaceId = useWorkspaceStore(state => state.activeWorkspaceId);
 	const hiddenHomeFolderIds = useWorkspaceStore(state => state.hiddenHomeFolderIds);
 	const loadWorkspaces = useWorkspaceStore(state => state.loadWorkspaces);
+	const antDesignTheme = useMemo(() => ({
+		algorithm:
+			resolvedTheme === 'dark'
+				? theme.darkAlgorithm
+				: theme.defaultAlgorithm
+	}), [resolvedTheme]);
 
 	useEffect(() => {
 		if (initializationStarted.current) return;
@@ -172,14 +179,20 @@ function App() {
 		}
 	}, [isAppReady, visibleColumnCount, visibleItemCount]);
 
+	useEffect(() => {
+		ConfigProvider.config({
+			holderRender: children => (
+				<ConfigProvider modal={ANT_MODAL_CONFIG} theme={antDesignTheme}>
+					{children}
+				</ConfigProvider>
+			)
+		});
+	}, [antDesignTheme]);
+
 	return (
 		<ConfigProvider
-			theme={{
-				algorithm:
-					resolvedTheme === 'dark'
-						? theme.darkAlgorithm
-						: theme.defaultAlgorithm
-			}}>
+			modal={ANT_MODAL_CONFIG}
+			theme={antDesignTheme}>
 			<div
 				className='min-h-screen px-4 md:px-8 flex justify-center'>
 				<div

@@ -32,7 +32,7 @@ export const BookmarkCleanupModal = ({ open, onClose }: BookmarkCleanupModalProp
 			title: `删除 ${duplicateIds.length} 个重复书签？`,
 			content: '每组会保留最早添加的一项，删除后可在页面底部撤销。',
 			okText: '删除重复项',
-			okType: 'danger',
+			okButtonProps: { danger: true },
 			cancelText: '取消',
 				onOk: async () => {
 					try {
@@ -56,7 +56,7 @@ export const BookmarkCleanupModal = ({ open, onClose }: BookmarkCleanupModalProp
 			title: `删除 ${emptyFolders.length} 个空文件夹？`,
 			content: '只会删除当前没有任何内容的文件夹，删除后可撤销。',
 			okText: '删除空文件夹',
-			okType: 'danger',
+			okButtonProps: { danger: true },
 			cancelText: '取消',
 			onOk: async () => {
 				try {

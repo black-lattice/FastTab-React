@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { message } from 'antd';
-import { CloseOutlined, PictureOutlined } from '@ant-design/icons';
+import { Button, Modal, message } from 'antd';
+import { PictureOutlined } from '@ant-design/icons';
 import {
 	ThemeMode,
 	useBackgroundStore
@@ -44,7 +44,6 @@ export const BackgroundSettings = () => {
 	const [layoutDraft, setLayoutDraft] = useState(layoutSettings);
 	const [isSaving, setIsSaving] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const containerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		setThemeMode(settings.themeMode);
@@ -60,22 +59,6 @@ export const BackgroundSettings = () => {
 			if (previewUrl) URL.revokeObjectURL(previewUrl);
 		};
 	}, [previewUrl]);
-
-	useEffect(() => {
-		if (!isOpen) return;
-		const handlePointerDown = (event: PointerEvent) => {
-				if (!containerRef.current?.contains(event.target as Node)) closeAppearanceSettings();
-			};
-			const handleKeyDown = (event: KeyboardEvent) => {
-				if (event.key === 'Escape') closeAppearanceSettings();
-		};
-		document.addEventListener('pointerdown', handlePointerDown);
-		document.addEventListener('keydown', handleKeyDown);
-		return () => {
-			document.removeEventListener('pointerdown', handlePointerDown);
-			document.removeEventListener('keydown', handleKeyDown);
-		};
-	}, [closeAppearanceSettings, isOpen]);
 
 	const themeOptions: { value: ThemeMode; label: string }[] = [
 		{ value: 'system', label: '跟随系统' },
@@ -144,7 +127,7 @@ export const BackgroundSettings = () => {
 	};
 
 	return (
-		<div ref={containerRef} className='appearance-settings-root fixed bottom-5 right-5'>
+		<div className='appearance-settings-root fixed bottom-5 right-5'>
 			<button
 				className={`quick-action-button ${isOpen ? 'is-active' : ''}`}
 				onClick={toggleAppearanceSettings}
@@ -154,24 +137,34 @@ export const BackgroundSettings = () => {
 				<PictureOutlined />
 			</button>
 
-			{isOpen && (
-				<div
-					className='theme-panel appearance-settings-panel absolute bottom-14 right-0 w-[min(360px,calc(100vw-40px))] rounded-2xl p-4'
-					role='dialog'
-					aria-label='外观设置'>
-					<div className='flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-color)]'>
-						<div>
-							<h3 className='m-0 text-base font-semibold'>外观设置</h3>
-							<p className='m-0 mt-1 text-xs text-[var(--text-tertiary)]'>图片会保存在本机，打开更快</p>
-						</div>
-						<button
-							className='theme-icon-button flex h-11 w-11 items-center justify-center rounded-full border-none cursor-pointer'
-							onClick={closeAppearanceSettings}
-							aria-label='关闭外观设置'>
-							<CloseOutlined />
-						</button>
+			<Modal
+				className='appearance-settings-modal'
+				title={
+					<div className='pr-8'>
+						<div>外观设置</div>
+						<p className='m-0 mt-1 text-xs font-normal text-[var(--text-tertiary)]'>
+							图片会保存在本机，打开更快
+						</p>
 					</div>
-
+				}
+				open={isOpen}
+				onCancel={closeAppearanceSettings}
+				width={520}
+				footer={
+					<div className='appearance-settings-actions'>
+						<Button
+							disabled={isSaving || settings.type !== 'image'}
+							onClick={() => void handleClear()}>
+							恢复默认背景
+						</Button>
+						<Button
+							type='primary'
+							loading={isSaving}
+							onClick={() => void handleSave()}>
+							保存
+						</Button>
+					</div>
+				}>
 					<div className='appearance-section-tabs mb-4 grid grid-cols-2 gap-1 rounded-xl p-1' role='tablist' aria-label='外观设置分类'>
 						<button
 							type='button'
@@ -249,13 +242,7 @@ export const BackgroundSettings = () => {
 							</div>
 						)}
 					</div>
-
-					<div className='appearance-settings-footer flex gap-2 pt-3 border-t border-[var(--border-color)]'>
-							<button className='min-h-11 flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-60' disabled={isSaving} onClick={handleSave}>{isSaving ? '保存中…' : '保存'}</button>
-							<button className='theme-secondary-button min-h-11 rounded-lg px-3 py-2 text-sm disabled:opacity-60' disabled={isSaving || settings.type !== 'image'} onClick={handleClear}>恢复默认背景</button>
-					</div>
-				</div>
-			)}
+			</Modal>
 		</div>
 	);
 };

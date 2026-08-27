@@ -3,32 +3,6 @@
 	padding: 0 !important;
 	overflow: hidden;
 	border-radius: 20px !important;
-	background: var(--manager-surface) !important;
-	backdrop-filter: blur(18px) saturate(120%);
-	-webkit-backdrop-filter: blur(18px) saturate(120%);
-}
-
-.bookmark-manager-modal .ant-modal-header {
-	margin: 0 !important;
-	padding: 22px 24px 18px;
-	border-bottom: 1px solid var(--border-color);
-}
-
-.bookmark-manager-modal .ant-modal-close {
-	top: 20px;
-	inset-inline-end: 20px;
-	border-radius: 10px;
-}
-
-.bookmark-manager-modal .ant-modal-body {
-	padding: 18px 24px 0;
-}
-
-.bookmark-manager-modal .ant-modal-footer {
-	margin: 0 !important;
-	padding: 16px 24px;
-	border-top: 1px solid var(--border-color);
-	background: var(--surface-muted);
 }
 
 .bookmark-manager-toolbar {
@@ -85,12 +59,6 @@
 }
 
 @media (max-width: 640px) {
-	.bookmark-manager-modal .ant-modal-header,
-	.bookmark-manager-modal .ant-modal-body,
-	.bookmark-manager-modal .ant-modal-footer {
-		padding-inline: 16px;
-	}
-
 	.bookmark-manager-search {
 		width: 100% !important;
 	}
@@ -292,20 +260,6 @@ button.bookmark-folder-option {
 	overflow-y: auto !important;
 	overscroll-behavior: contain;
 	-webkit-overflow-scrolling: touch;
-}
-
-.bookmark-edit-modal-mask {
-	z-index: 1600;
-	background: var(--modal-mask);
-	backdrop-filter: blur(4px);
-	-webkit-backdrop-filter: blur(4px);
-}
-
-.bookmark-edit-modal-panel {
-	position: relative;
-	z-index: 1;
-	max-height: calc(100vh - 32px);
-	overflow-y: auto;
 }
 
 @media (max-width: 760px) {
