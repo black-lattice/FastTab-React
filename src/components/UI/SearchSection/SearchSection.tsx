@@ -43,6 +43,7 @@ export const SearchSection: React.FC = () => {
 	const commands = useSearchCommands();
 	const deferredQuery = useDeferredValue(searchQuery.trim().toLowerCase());
 	const inputRef = useRef<HTMLInputElement>(null);
+	const isComposingRef = useRef(false);
 	const phoneticPromiseRef = useRef<Promise<Record<string, BookmarkPhonetic>> | null>(null);
 	const [isFocused, setIsFocused] = useState(false);
 	const [activeIndex, setActiveIndex] = useState(-1);
@@ -181,7 +182,12 @@ export const SearchSection: React.FC = () => {
 						setActiveIndex(-1);
 					}}
 					onFocus={() => setIsFocused(true)}
-					onBlur={() => setIsFocused(false)}
+					onBlur={() => {
+						setIsFocused(false);
+						isComposingRef.current = false;
+					}}
+					onCompositionStart={() => { isComposingRef.current = true; }}
+					onCompositionEnd={() => { isComposingRef.current = false; }}
 					onKeyDown={event => {
 						if (event.key === 'ArrowDown' && resultCount) {
 							event.preventDefault();
@@ -190,6 +196,9 @@ export const SearchSection: React.FC = () => {
 							event.preventDefault();
 							setActiveIndex(index => getNextSearchIndex(index, resultCount, 'previous'));
 						} else if (event.key === 'Enter') {
+							// IME uses Enter to confirm Chinese/Japanese/Korean candidates.
+							// Do not treat that confirmation as a search submission.
+							if (isComposingRef.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
 							handlePrimaryAction();
 						} else if (event.key === 'Escape') {
 							setIsFocused(false);
