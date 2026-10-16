@@ -58,4 +58,18 @@ describe('searchStore', () => {
 			active: false
 		});
 	});
+
+	it('输入和切换引擎不会搜索，主动提交后才使用完整中文查询', () => {
+		const { setSearchQuery, setSelectedEngine, performSearch } = useSearchStore.getState();
+		setSearchQuery('zhong');
+		setSearchQuery('中文搜索');
+		setSelectedEngine(DEFAULT_ENGINES[0]);
+		expect(window.location.href).toBe('');
+		expect(chrome.tabs.create).not.toHaveBeenCalled();
+
+		performSearch(useSearchStore.getState().searchQuery);
+		expect(window.location.href).toBe(
+			`https://www.google.com/search?q=${encodeURIComponent('中文搜索')}`
+		);
+	});
 });

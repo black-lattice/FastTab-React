@@ -16,17 +16,28 @@ import {
 } from '@ant-design/icons';
 import { useBookmarkStore } from '../../../store/bookmarkStore';
 import { useSearchStore } from '../../../store/searchStore';
+import type { SearchEngine } from '../../../store/searchStore';
 import { rankBookmarks } from '../../../utils/bookmarkSearch';
 import type { BookmarkPhonetic } from '../../../utils/bookmarkSearch';
-import { getNextSearchIndex } from '../../../utils/searchKeyboard';
+import { getNextSearchIndex, isSearchComposing } from '../../../utils/searchKeyboard';
 import { SearchEngineSettingsModal } from './SearchEngineSettingsModal';
 import { useSearchCommands } from './useSearchCommands';
 import type { SearchCommand } from './useSearchCommands';
 
-const engineBadgeClass: Record<string, string> = {
-	google: 'is-google',
-	bing: 'is-bing',
-	baidu: 'is-baidu'
+// 图标来自各搜索引擎官网，随扩展一起打包，不发起远程图标请求。
+const engineIconPaths: Record<string, string> = {
+	google: '../icons/search-engines/google.ico',
+	bing: '../icons/search-engines/bing.ico',
+	baidu: '../icons/search-engines/baidu.ico'
+};
+
+const renderEngineIcon = (engine: SearchEngine) => {
+	const src = !engine.isCustom && engineIconPaths[engine.value];
+	return src ? (
+		<img src={src} alt='' aria-hidden='true' width={24} height={24} className='h-6 w-6 shrink-0 object-contain' />
+	) : (
+		<span aria-hidden='true' className='search-engine-badge'>{engine.icon}</span>
+	);
 };
 
 export const SearchSection: React.FC = () => {
@@ -120,6 +131,7 @@ export const SearchSection: React.FC = () => {
 		return true;
 	};
 	const handlePrimaryAction = () => {
+		if (isComposingRef.current) return;
 		if (isCommandMode) {
 			const command = matchingCommands[activeIndex >= 0 ? activeIndex : 0];
 			if (command) void executeCommand(command);
@@ -131,24 +143,28 @@ export const SearchSection: React.FC = () => {
 	const engineItems: MenuProps['items'] = [
 		...searchEngines.map(engine => ({
 			key: engine.id,
+			title: engine.label,
+			'aria-label': engine.label,
 			label: (
-				<div className='flex min-w-36 items-center gap-3 py-1'>
-					<span className={`search-engine-badge ${engineBadgeClass[engine.value] || ''}`}>{engine.icon}</span>
-					<div className='flex flex-col'>
-						<span className='font-medium'>{engine.label}</span>
-						<span className='text-[11px] text-[var(--text-tertiary)]'>使用 {engine.label} 搜索</span>
-					</div>
+				<div className='flex min-h-11 min-w-11 items-center justify-center'>
+					{renderEngineIcon(engine)}
 				</div>
 			)
 		})),
 		{ type: 'divider' },
-		{ key: 'manage-engines', icon: <SettingOutlined />, label: '管理搜索引擎' }
+		{
+			key: 'manage-engines',
+			title: '管理搜索引擎',
+			'aria-label': '管理搜索引擎',
+			label: <span className='flex min-h-11 min-w-11 items-center justify-center'><SettingOutlined /></span>
+		}
 	];
 
 	return (
 		<header className='relative z-40 mx-auto mb-8 w-full max-w-2xl'>
 			<div className='theme-glass search-input-wrapper flex items-center rounded-2xl border p-1.5'>
 				<Dropdown
+					overlayClassName='search-engine-dropdown'
 					menu={{
 						items: engineItems,
 						selectable: true,
@@ -163,10 +179,10 @@ export const SearchSection: React.FC = () => {
 						}
 					}}
 					placement='bottomLeft'
+					align={{ offset: [0, 8] }}
 					trigger={['click']}>
-					<button type='button' className='search-engine-trigger' aria-label='选择搜索引擎'>
-						<span className={`search-engine-badge ${engineBadgeClass[selectedEngine.value] || ''}`}>{selectedEngine.icon}</span>
-						<span>{selectedEngine.label}</span>
+					<button type='button' className='search-engine-trigger' title={selectedEngine.label} aria-label={`选择搜索引擎，当前为 ${selectedEngine.label}`}>
+						{renderEngineIcon(selectedEngine)}
 						<DownOutlined className='text-[9px] text-[var(--text-tertiary)]' />
 					</button>
 				</Dropdown>
@@ -189,6 +205,8 @@ export const SearchSection: React.FC = () => {
 					onCompositionStart={() => { isComposingRef.current = true; }}
 					onCompositionEnd={() => { isComposingRef.current = false; }}
 					onKeyDown={event => {
+						// 选词期间的回车、方向键和 Esc 由输入法处理。
+						if (isSearchComposing(event.nativeEvent, isComposingRef.current)) return;
 						if (event.key === 'ArrowDown' && resultCount) {
 							event.preventDefault();
 							setActiveIndex(index => getNextSearchIndex(index, resultCount, 'next'));
@@ -196,9 +214,8 @@ export const SearchSection: React.FC = () => {
 							event.preventDefault();
 							setActiveIndex(index => getNextSearchIndex(index, resultCount, 'previous'));
 						} else if (event.key === 'Enter') {
-							// IME uses Enter to confirm Chinese/Japanese/Korean candidates.
-							// Do not treat that confirmation as a search submission.
-							if (isComposingRef.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
+							event.preventDefault();
+							if (event.repeat) return;
 							handlePrimaryAction();
 						} else if (event.key === 'Escape') {
 							setIsFocused(false);

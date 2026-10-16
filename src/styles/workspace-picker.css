@@ -1,0 +1,189 @@
+.workspace-picker {
+	overflow: hidden;
+	border: 1px solid var(--border-color);
+	border-radius: 14px;
+	background: var(--manager-surface);
+}
+
+.workspace-picker-summary,
+.workspace-picker-selection {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--border-color);
+	color: var(--text-secondary);
+	font-size: 12px;
+}
+
+.workspace-picker-summary strong {
+	color: var(--text-primary);
+}
+
+.workspace-picker-panels {
+	display: grid;
+	grid-template-columns: 230px minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr);
+	height: clamp(280px, calc(100dvh - 380px), 450px);
+}
+
+.workspace-picker-folders,
+.workspace-picker-bookmarks {
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 8px;
+}
+
+.workspace-picker-folders {
+	border-right: 1px solid var(--border-color);
+	background: var(--surface-muted);
+}
+
+.workspace-picker-category {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	min-height: 44px;
+	margin-bottom: 3px;
+	padding: 8px 12px;
+	border: 1px solid transparent;
+	border-radius: 9px;
+	background: transparent;
+	color: var(--text-secondary);
+	text-align: left;
+	cursor: pointer;
+}
+
+.workspace-picker-category > span:not(.anticon) {
+	min-width: 0;
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.workspace-picker-category small {
+	flex-shrink: 0;
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+}
+
+.workspace-picker-category:hover,
+.workspace-picker-bookmark:hover {
+	background: var(--surface-muted);
+}
+
+.workspace-picker-category.is-active {
+	border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
+	background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+	color: var(--text-primary);
+}
+
+.workspace-picker-category:focus-visible {
+	outline: 2px solid var(--primary-color);
+	outline-offset: -2px;
+}
+
+.workspace-picker-caption {
+	margin-top: 8px;
+	padding: 10px 12px 6px;
+	border-top: 1px solid var(--border-color);
+	color: var(--text-tertiary);
+	font-size: 11px;
+}
+
+.workspace-picker-content {
+	display: flex;
+	min-width: 0;
+	min-height: 0;
+	flex-direction: column;
+}
+
+.workspace-picker-heading {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px 14px 0;
+}
+
+.workspace-picker-heading h3 {
+	margin: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.workspace-picker-heading .ant-checkbox-wrapper {
+	font-size: 12px;
+	color: var(--text-secondary);
+}
+
+.workspace-picker-selection {
+	flex-shrink: 0;
+}
+
+.workspace-picker-bookmarks {
+	flex: 1;
+}
+
+.workspace-picker-bookmark.ant-checkbox-wrapper {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	min-height: 62px;
+	margin: 0 0 4px;
+	padding: 10px;
+	border-radius: 9px;
+}
+
+.workspace-picker-bookmark.is-selected {
+	background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+}
+
+.workspace-picker-bookmark > span:last-child {
+	min-width: 0;
+	flex: 1;
+}
+
+.workspace-picker-bookmark-title,
+.workspace-picker-bookmark-detail {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.workspace-picker-bookmark-detail {
+	margin-top: 4px;
+	color: var(--text-tertiary);
+	font-size: 11px;
+}
+
+.workspace-picker-empty {
+	padding: 28px 12px;
+	color: var(--text-tertiary);
+	text-align: center;
+	font-size: 12px;
+}
+
+.workspace-picker-empty > .anticon {
+	font-size: 28px;
+}
+
+@media (max-width: 640px) {
+	.workspace-picker-panels {
+		grid-template-columns: 1fr;
+		grid-template-rows: 150px minmax(280px, 1fr);
+		height: 520px;
+	}
+	.workspace-picker-folders {
+		border-right: 0;
+		border-bottom: 1px solid var(--border-color);
+	}
+}

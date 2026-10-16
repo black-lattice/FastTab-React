@@ -1,16 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { Checkbox, Input, Modal, Select, message } from 'antd';
-import { useBookmarkStore } from '../../store/bookmarkStore';
+import { Input, Modal, Select, message } from 'antd';
 import { useUIStore } from '../../store/uiStore';
 import { HOME_WORKSPACE_ID, useWorkspaceStore } from '../../store/workspaceStore';
-import { flattenBookmarkFolders } from '../../utils/bookmarkTree';
+import { WorkspaceBookmarkPicker } from './WorkspaceBookmarkPicker';
 
 export const WorkspaceManagerModal = () => {
 	const isOpen = useUIStore(state => state.isWorkspaceManagerOpen);
 	const onClose = useUIStore(state => state.closeWorkspaceManager);
-	const bookmarks = useBookmarkStore(state => state.bookmarks);
-	const folders = useBookmarkStore(state => state.folders);
 	const workspaces = useWorkspaceStore(state => state.workspaces);
 	const activeWorkspaceId = useWorkspaceStore(state => state.activeWorkspaceId);
 	const createWorkspace = useWorkspaceStore(state => state.createWorkspace);
@@ -20,24 +17,10 @@ export const WorkspaceManagerModal = () => {
 	const [selectedId, setSelectedId] = useState('');
 	const [newName, setNewName] = useState('');
 	const [name, setName] = useState('');
-	const [searchText, setSearchText] = useState('');
 	const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
 	const [folderIds, setFolderIds] = useState<string[]>([]);
 	const [isSaving, setIsSaving] = useState(false);
 	const selectedWorkspace = workspaces.find(workspace => workspace.id === selectedId);
-	const flatFolders = useMemo(
-		() => flattenBookmarkFolders(folders),
-		[folders]
-	);
-	const normalizedSearch = searchText.trim().toLowerCase();
-	const visibleBookmarks = bookmarks.filter(bookmark =>
-		!normalizedSearch ||
-		bookmark.title.toLowerCase().includes(normalizedSearch) ||
-		bookmark.url.toLowerCase().includes(normalizedSearch)
-	);
-	const visibleFolders = flatFolders.filter(({ folder }) =>
-		!normalizedSearch || folder.title.toLowerCase().includes(normalizedSearch)
-	);
 
 	useEffect(() => {
 		if (!isOpen) return;
@@ -101,12 +84,6 @@ export const WorkspaceManagerModal = () => {
 			}
 		});
 	};
-	const toggleId = (
-		id: string,
-		checked: boolean,
-		currentIds: string[],
-		setIds: (ids: string[]) => void
-	) => setIds(checked ? [...currentIds, id] : currentIds.filter(item => item !== id));
 
 	return (
 		<Modal
@@ -114,7 +91,7 @@ export const WorkspaceManagerModal = () => {
 			title='管理首页工作区'
 			open={isOpen}
 			onCancel={onClose}
-			width={720}
+			width={880}
 			footer={null}
 			destroyOnHidden>
 			<div className='space-y-4 pt-2'>
@@ -154,35 +131,13 @@ export const WorkspaceManagerModal = () => {
 							</label>
 						</div>
 
-						<Input.Search
-							value={searchText}
-							onChange={event => setSearchText(event.target.value)}
-							placeholder='筛选书签或文件夹'
-							allowClear
-						/>
-
-						<div className='workspace-item-picker grid gap-4 sm:grid-cols-2'>
-							<section>
-								<h3 className='mb-2 text-sm font-medium'>文件夹（{folderIds.length}）</h3>
-								<div className='space-y-1'>
-									{visibleFolders.map(({ folder, depth }) => (
-										<Checkbox key={folder.id} checked={folderIds.includes(folder.id)} onChange={event => toggleId(folder.id, event.target.checked, folderIds, setFolderIds)}>
-											<span style={{ paddingLeft: depth * 12 }}>{folder.title}</span>
-										</Checkbox>
-									))}
-								</div>
-							</section>
-							<section>
-								<h3 className='mb-2 text-sm font-medium'>书签（{bookmarkIds.length}）</h3>
-								<div className='space-y-1'>
-									{visibleBookmarks.map(bookmark => (
-										<Checkbox key={bookmark.id} checked={bookmarkIds.includes(bookmark.id)} onChange={event => toggleId(bookmark.id, event.target.checked, bookmarkIds, setBookmarkIds)}>
-											<span className='inline-block max-w-52 truncate align-bottom'>{bookmark.title || bookmark.url}</span>
-										</Checkbox>
-									))}
-								</div>
-							</section>
-						</div>
+						{isOpen && selectedWorkspace && <WorkspaceBookmarkPicker
+							key={selectedId}
+							bookmarkIds={bookmarkIds}
+							folderIds={folderIds}
+							onBookmarksChange={setBookmarkIds}
+							onFoldersChange={setFolderIds}
+						/>}
 
 						<div className='flex flex-wrap justify-between gap-2 border-t border-[var(--border-color)] pt-4'>
 							<button type='button' className='theme-secondary-button flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm text-red-500' onClick={confirmDelete}>

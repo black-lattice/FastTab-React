@@ -2,6 +2,7 @@
 @import "./styles/enhancements.css";
 @import "./styles/search.css";
 @import "./styles/workspace.css";
+@import "./styles/workspace-picker.css";
 @import "./styles/actions.css";
 @import "./styles/popup.css";
 @import "./styles/loading.css";
@@ -135,8 +136,9 @@
 .search-engine-trigger {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	gap: 8px;
-	min-width: 116px;
+	min-width: 44px;
 	padding: 6px 8px;
 	border: 0;
 	border-radius: 11px;
@@ -166,18 +168,6 @@
 	font-size: 12px;
 	font-weight: 700;
 	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
-}
-
-.search-engine-badge.is-google {
-	background: linear-gradient(135deg, #4285f4, #34a853);
-}
-
-.search-engine-badge.is-bing {
-	background: linear-gradient(135deg, #008373, #00a4ef);
-}
-
-.search-engine-badge.is-baidu {
-	background: linear-gradient(135deg, #315efb, #654cff);
 }
 
 /* Ant Design 浮层统一使用主题毛玻璃材质 */

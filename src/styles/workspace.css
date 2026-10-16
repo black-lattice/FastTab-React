@@ -98,19 +98,6 @@
 	color: currentColor;
 }
 
-.workspace-item-picker {
-	max-height: min(420px, calc(100dvh - 330px));
-	overflow-y: auto;
-	overscroll-behavior: contain;
-}
-
-.workspace-item-picker .ant-checkbox-wrapper {
-	display: flex;
-	min-height: 44px;
-	align-items: center;
-	margin-inline-start: 0;
-}
-
 @media (hover: none) {
 	.workspace-tab,
 	.workspace-manage-button {

@@ -1,3 +1,8 @@
+export const isSearchComposing = (
+	event: Pick<KeyboardEvent, 'isComposing' | 'keyCode'>,
+	compositionActive: boolean
+) => compositionActive || event.isComposing || event.keyCode === 229;
+
 export const getNextSearchIndex = (
 	currentIndex: number,
 	resultCount: number,
