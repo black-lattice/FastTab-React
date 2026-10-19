@@ -96,6 +96,7 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 			});
 		} catch (error) {
 			console.error('加载书签显示设置失败:', error);
+			throw error;
 		}
 	},
 
@@ -137,6 +138,10 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 				bookmarkIds.has(id)
 			);
 
+			await useWorkspaceStore.getState().migrateHomeWorkspace(
+				[...parsedTree.rootBookmarkIds, ...externalBookmarkIds],
+				parsedTree.folders.map(folder => folder.id)
+			);
 			set({ ...parsedTree, externalBookmarkIds, error: null });
 			if (externalBookmarkIds.length !== currentExternalBookmarkIds.length) {
 				await chrome.storage.local.set({

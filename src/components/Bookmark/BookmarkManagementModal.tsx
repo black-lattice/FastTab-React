@@ -1,13 +1,9 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import {
 	Button,
-	Checkbox,
 	Dropdown,
-	Empty,
 	Modal,
 	Space,
-	Switch,
-	Tooltip,
 	message
 } from 'antd';
 import {
@@ -21,33 +17,27 @@ import { useUIStore } from '../../store/uiStore';
 import { flattenBookmarkFolders } from '../../utils/bookmarkTree';
 import { BookmarkCleanupModal } from './BookmarkCleanupModal';
 import {
-	BookmarkFavicon,
 	BookmarkFolderSidebar,
 	BookmarkManagerHeader,
 	BookmarkManagerToolbar
 } from './BookmarkManagementParts';
 import type { BookmarkDisplayFilter } from './BookmarkManagementParts';
 import { useShallow } from 'zustand/react/shallow';
-
-const BOOKMARK_RENDER_BATCH_SIZE = 20;
+import { BookmarkWorkspaceTabs } from './BookmarkWorkspaceTabs';
+import { BookmarkManagerList } from './BookmarkManagerList';
+import { useBookmarkWorkspace } from './useBookmarkWorkspace';
 
 const BookmarkManagementModal: React.FC = () => {
 	const {
 		bookmarks,
 		folders,
-		rootBookmarkIds,
-		externalBookmarkIds,
 		removeBookmarks,
-		moveBookmarks,
-		setBookmarksExternal
+		moveBookmarks
 	} = useBookmarkStore(useShallow(state => ({
 		bookmarks: state.bookmarks,
 		folders: state.folders,
-		rootBookmarkIds: state.rootBookmarkIds,
-		externalBookmarkIds: state.externalBookmarkIds,
 		removeBookmarks: state.removeBookmarks,
-		moveBookmarks: state.moveBookmarks,
-		setBookmarksExternal: state.setBookmarksExternal
+		moveBookmarks: state.moveBookmarks
 	})));
 	const {
 		isBookmarkManagerOpen,
@@ -64,15 +54,9 @@ const BookmarkManagementModal: React.FC = () => {
 	const [selectedFolderId, setSelectedFolderId] = useState('all');
 	const [displayFilter, setDisplayFilter] = useState<BookmarkDisplayFilter>('all');
 	const [isCleanupOpen, setIsCleanupOpen] = useState(false);
-	const [renderLimit, setRenderLimit] = useState(BOOKMARK_RENDER_BATCH_SIZE);
-	const listRef = useRef<HTMLElement>(null);
+	const workspace = useBookmarkWorkspace();
 	const deferredSearchText = useDeferredValue(searchText.trim().toLowerCase());
 	const flatFolders = useMemo(() => flattenBookmarkFolders(folders), [folders]);
-	const rootBookmarkIdSet = useMemo(() => new Set(rootBookmarkIds), [rootBookmarkIds]);
-	const homeBookmarkIdSet = useMemo(
-		() => new Set([...rootBookmarkIds, ...externalBookmarkIds]),
-		[rootBookmarkIds, externalBookmarkIds]
-	);
 	const folderCounts = useMemo(() => {
 		const counts = new Map<string, number>();
 		for (const bookmark of bookmarks) {
@@ -89,11 +73,11 @@ const BookmarkManagementModal: React.FC = () => {
 				deferredSearchText || selectedFolderId === 'all'
 					? true
 					: bookmark.parentId === selectedFolderId;
-			const isVisibleOnHome = homeBookmarkIdSet.has(bookmark.id);
+			const isIncluded = workspace.bookmarkIds.has(bookmark.id);
 			const matchesDisplay =
 				displayFilter === 'all' ||
-				(displayFilter === 'external' && isVisibleOnHome) ||
-				(displayFilter === 'internal' && !isVisibleOnHome);
+				(displayFilter === 'external' && isIncluded) ||
+				(displayFilter === 'internal' && !isIncluded);
 			const matchesSearch =
 				!deferredSearchText ||
 				bookmark.title.toLowerCase().includes(deferredSearchText) ||
@@ -104,39 +88,19 @@ const BookmarkManagementModal: React.FC = () => {
 		bookmarks,
 		deferredSearchText,
 		displayFilter,
-		homeBookmarkIdSet,
+		workspace.bookmarkIds,
 		selectedFolderId
 	]);
-	const renderedBookmarks = useMemo(
-		() => visibleBookmarks.slice(0, renderLimit),
-		[renderLimit, visibleBookmarks]
-	);
-	const selectedBookmarkIdSet = useMemo(
-		() => new Set(selectedBookmarkIds),
-		[selectedBookmarkIds]
-	);
-
-	useEffect(() => {
-		setRenderLimit(BOOKMARK_RENDER_BATCH_SIZE);
-		listRef.current?.scrollTo({ top: 0 });
-	}, [deferredSearchText, displayFilter, selectedFolderId]);
-
-	const setExternalState = async (
-		ids: string[],
-		isExternal: boolean,
-		clearSelection = true
-	) => {
-		const editableIds = ids.filter(id => !rootBookmarkIdSet.has(id));
-		if (!editableIds.length) {
-			message.info('书签栏根目录项目会固定显示在首页');
-			return;
-		}
-		try {
-			await setBookmarksExternal(editableIds, isExternal);
-			message.success(isExternal ? '已显示在首页' : '已从首页收起');
-			if (clearSelection) setSelectedBookmarkIds([]);
-		} catch {
-			message.error('首页显示设置保存失败');
+	const selectWorkspace = (id: string) => {
+		workspace.setWorkspaceId(id);
+		setSelectedBookmarkIds([]);
+		setDisplayFilter('all');
+		setSelectedFolderId('all');
+		setSearchText('');
+	};
+	const setIncludedState = async (ids: string[], included: boolean, clearSelection = true) => {
+		if (await workspace.setIncluded('bookmarkIds', ids, included) && clearSelection) {
+			setSelectedBookmarkIds([]);
 		}
 	};
 	const moveSelectedBookmarks = async (folderId: string) => {
@@ -150,8 +114,8 @@ const BookmarkManagementModal: React.FC = () => {
 	};
 	const deleteSelected = () => {
 		Modal.confirm({
-			title: '删除选中的书签？',
-			content: `将从浏览器书签中删除 ${selectedBookmarkIds.length} 项，删除后可在页面底部短暂撤销。`,
+			title: '从浏览器删除选中的书签？',
+			content: `将从浏览器书签中删除 ${selectedBookmarkIds.length} 项，同时影响所有工作区；删除后可在页面底部短暂撤销。`,
 			okText: '删除',
 			okButtonProps: { danger: true },
 			cancelText: '取消',
@@ -175,51 +139,33 @@ const BookmarkManagementModal: React.FC = () => {
 		})),
 		[flatFolders]
 	);
-	const allVisibleSelected =
-		visibleBookmarks.length > 0 &&
-		visibleBookmarks.every(bookmark => selectedBookmarkIdSet.has(bookmark.id));
-	const visibleSelectedCount = visibleBookmarks.filter(bookmark =>
-		selectedBookmarkIdSet.has(bookmark.id)
-	).length;
-	const handleListScroll = (event: React.UIEvent<HTMLElement>) => {
-		const list = event.currentTarget;
-		if (
-			renderLimit < visibleBookmarks.length &&
-			list.scrollHeight - list.scrollTop - list.clientHeight < 240
-		) {
-			setRenderLimit(current => Math.min(
-				current + BOOKMARK_RENDER_BATCH_SIZE,
-				visibleBookmarks.length
-			));
-		}
-	};
 
 	return (
 		<>
 			<Modal
-			className='bookmark-manager-modal bookmark-card-manager'
+				className='bookmark-manager-modal bookmark-card-manager'
 				title={<BookmarkManagerHeader />}
-			open={isBookmarkManagerOpen}
+				open={isBookmarkManagerOpen}
 			onCancel={closeBookmarkManager}
 			width={1040}
 			centered
 			footer={
 				<div className='flex flex-wrap items-center justify-between gap-3'>
 					<span className='text-sm text-[var(--text-tertiary)]'>
-						已选择 {selectedBookmarkIds.length} 项
+						已选择 {selectedBookmarkIds.length} 项 · 当前可见 {visibleBookmarks.filter(item => selectedBookmarkIds.includes(item.id)).length} 项
 					</span>
 					<Space wrap>
 						<Button
 							icon={<EyeOutlined />}
-							disabled={!selectedBookmarkIds.length}
-							onClick={() => void setExternalState(selectedBookmarkIds, true)}>
-							显示在首页
+							disabled={!selectedBookmarkIds.length || workspace.saving || !workspace.workspace}
+							onClick={() => void setIncludedState(selectedBookmarkIds, true)}>
+							批量加入
 						</Button>
 						<Button
 							icon={<EyeInvisibleOutlined />}
-							disabled={!selectedBookmarkIds.length}
-							onClick={() => void setExternalState(selectedBookmarkIds, false)}>
-							从首页收起
+							disabled={!selectedBookmarkIds.length || workspace.saving || !workspace.workspace}
+							onClick={() => void setIncludedState(selectedBookmarkIds, false)}>
+							批量移除
 						</Button>
 						<Dropdown
 							menu={{
@@ -232,7 +178,7 @@ const BookmarkManagementModal: React.FC = () => {
 						<Button
 							danger
 							icon={<DeleteOutlined />}
-							disabled={!selectedBookmarkIds.length}
+							disabled={!selectedBookmarkIds.length || workspace.saving}
 							onClick={deleteSelected}>
 							删除
 						</Button>
@@ -240,102 +186,40 @@ const BookmarkManagementModal: React.FC = () => {
 					</Space>
 				</div>
 			}>
+				<BookmarkWorkspaceTabs value={workspace.workspaceId} onChange={selectWorkspace}
+					disabled={workspace.saving || !workspace.isMigrated} />
 				<BookmarkManagerToolbar
 					searchText={searchText}
 					displayFilter={displayFilter}
-					homeCount={homeBookmarkIdSet.size}
+					includedCount={bookmarks.filter(item => workspace.bookmarkIds.has(item.id)).length}
 					onSearchChange={setSearchText}
 					onFilterChange={setDisplayFilter}
 					onCleanup={() => setIsCleanupOpen(true)}
 				/>
 
-			<div className='bookmark-manager-layout'>
+				<div className='bookmark-manager-layout'>
 					<BookmarkFolderSidebar
 						folders={flatFolders}
 						folderCounts={folderCounts}
 						selectedFolderId={selectedFolderId}
 						totalCount={bookmarks.length}
 						onSelect={setSelectedFolderId}
+						includedFolderIds={workspace.folderIds}
+						workspaceName={workspace.workspace?.name || '工作区'}
+						disabled={!workspace.workspace || workspace.saving || !workspace.isMigrated}
+						onIncludedChange={(id, included) => void workspace.setIncluded('folderIds', [id], included)}
 					/>
 
-				<section
-					ref={listRef}
-					className='bookmark-card-list'
-					aria-label='书签列表'
-					onScroll={handleListScroll}>
-					<div className='mb-3 flex items-center justify-between'>
-						<Checkbox
-							checked={allVisibleSelected}
-							indeterminate={visibleSelectedCount > 0 && !allVisibleSelected}
-							onChange={event =>
-								setSelectedBookmarkIds(
-									event.target.checked
-										? visibleBookmarks.map(bookmark => bookmark.id)
-										: []
-								)
-							}>
-							选择当前结果
-						</Checkbox>
-						<span className='text-xs text-[var(--text-tertiary)]'>
-							{visibleBookmarks.length} 个书签
-						</span>
-					</div>
-
-					{visibleBookmarks.length ? (
-						<div className='grid grid-cols-1 gap-3 lg:grid-cols-2'>
-							{renderedBookmarks.map(bookmark => {
-								const checked = selectedBookmarkIdSet.has(bookmark.id);
-								const isRootBookmark = rootBookmarkIdSet.has(bookmark.id);
-								return (
-									<article
-										key={bookmark.id}
-										className={`bookmark-manager-card ${checked ? 'is-selected' : ''}`}>
-										<Checkbox
-											checked={checked}
-											aria-label={`选择 ${bookmark.title}`}
-											onChange={event =>
-												setSelectedBookmarkIds(
-													event.target.checked
-														? [...selectedBookmarkIds, bookmark.id]
-														: selectedBookmarkIds.filter(id => id !== bookmark.id)
-												)
-											}
-										/>
-										<BookmarkFavicon bookmark={bookmark} />
-										<a href={bookmark.url} className='min-w-0 flex-1' title={bookmark.title}>
-											<strong className='bookmark-card-title'>{bookmark.title}</strong>
-											<span className='bookmark-card-url'>{bookmark.url}</span>
-										</a>
-										<Tooltip title={isRootBookmark ? '书签栏根目录项目固定显示' : '是否显示在首页'}>
-											<Switch
-												size='small'
-												checked={homeBookmarkIdSet.has(bookmark.id)}
-												disabled={isRootBookmark}
-												onChange={checkedState =>
-													void setExternalState([bookmark.id], checkedState, false)
-												}
-												aria-label={`${bookmark.title} 首页显示`}
-											/>
-										</Tooltip>
-									</article>
-								);
-							})}
-							{renderedBookmarks.length < visibleBookmarks.length && (
-								<button
-									type='button'
-									className='bookmark-manager-load-more col-span-full'
-									onClick={() => setRenderLimit(current => Math.min(
-										current + BOOKMARK_RENDER_BATCH_SIZE,
-										visibleBookmarks.length
-									))}>
-									继续显示（剩余 {visibleBookmarks.length - renderedBookmarks.length} 项）
-								</button>
-							)}
-						</div>
-					) : (
-						<Empty description='没有符合条件的书签' className='mt-20' />
-					)}
-				</section>
+				<BookmarkManagerList
+					resetKey={[workspace.workspaceId, deferredSearchText, displayFilter, selectedFolderId].join('|')}
+					visibleBookmarks={visibleBookmarks}
+					selectedBookmarkIds={selectedBookmarkIds}
+					setSelectedBookmarkIds={setSelectedBookmarkIds}
+					includedIds={workspace.bookmarkIds}
+					workspaceName={workspace.workspace?.name || '工作区'}
+					disabled={!workspace.workspace || workspace.saving || !workspace.isMigrated}
+					onIncludedChange={(id, included) => void setIncludedState([id], included, false)}
+				/>
 			</div>
 			</Modal>
 			<BookmarkCleanupModal open={isCleanupOpen} onClose={() => setIsCleanupOpen(false)} />

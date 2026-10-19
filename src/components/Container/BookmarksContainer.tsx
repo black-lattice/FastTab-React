@@ -6,7 +6,7 @@ import { EditModal } from '../UI/EditModal/EditModal';
 import { useBookmarkStore } from '../../store/bookmarkStore';
 import { useUIStore } from '../../store/uiStore';
 import { useLayoutStore } from '../../store/layoutStore';
-import { HOME_WORKSPACE_ID, useWorkspaceStore } from '../../store/workspaceStore';
+import { useWorkspaceStore } from '../../store/workspaceStore';
 import { getWorkspaceContent } from '../../utils/workspaceContent';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -14,8 +14,6 @@ export const BookmarksContainer: React.FC = () => {
 	const {
 		folders,
 		bookmarks,
-		externalBookmarkIds,
-		rootBookmarkIds,
 		loading,
 		error,
 		permissionState,
@@ -25,8 +23,6 @@ export const BookmarksContainer: React.FC = () => {
 	} = useBookmarkStore(useShallow(state => ({
 		folders: state.folders,
 		bookmarks: state.bookmarks,
-		externalBookmarkIds: state.externalBookmarkIds,
-		rootBookmarkIds: state.rootBookmarkIds,
 		loading: state.loading,
 		error: state.error,
 		permissionState: state.permissionState,
@@ -38,28 +34,20 @@ export const BookmarksContainer: React.FC = () => {
 	const {
 		isEditModalOpen,
 		editingBookmark,
-		closeEditModal,
-		openAddBookmark
+		closeEditModal
 	} = useUIStore(useShallow(state => ({
 		isEditModalOpen: state.isEditModalOpen,
 		editingBookmark: state.editingBookmark,
-		closeEditModal: state.closeEditModal,
-		openAddBookmark: state.openAddBookmark
+		closeEditModal: state.closeEditModal
 	})));
 	const openWorkspaceManager = useUIStore(state => state.openWorkspaceManager);
 	const folderPosition = useLayoutStore(state => state.settings.folderPosition);
 	const workspaces = useWorkspaceStore(state => state.workspaces);
 	const activeWorkspaceId = useWorkspaceStore(state => state.activeWorkspaceId);
-	const hiddenHomeFolderIds = useWorkspaceStore(state => state.hiddenHomeFolderIds);
-	const activeWorkspace = activeWorkspaceId === HOME_WORKSPACE_ID
-		? undefined
-		: workspaces.find(workspace => workspace.id === activeWorkspaceId);
+	const activeWorkspace = workspaces.find(workspace => workspace.id === activeWorkspaceId);
 	const workspaceContent = getWorkspaceContent(
 		bookmarks,
 		folders,
-		rootBookmarkIds,
-		externalBookmarkIds,
-		hiddenHomeFolderIds,
 		activeWorkspace
 	);
 	const homeBookmarks = workspaceContent.bookmarks;
@@ -73,7 +61,17 @@ export const BookmarksContainer: React.FC = () => {
 	};
 	const retryLoading = async () => {
 		const hasPermission = await checkPermission();
-		if (hasPermission) await loadBookmarks();
+		if (hasPermission) {
+			try {
+				await Promise.all([
+					useWorkspaceStore.getState().loadWorkspaces(),
+					useBookmarkStore.getState().loadDisplaySettings()
+				]);
+				await loadBookmarks();
+			} catch {
+				useBookmarkStore.setState({ error: '工作区或书签配置加载失败，请重试', loading: false });
+			}
+		}
 	};
 	const openExtensionSettings = () => {
 		void chrome.tabs.create({
@@ -87,7 +85,6 @@ export const BookmarksContainer: React.FC = () => {
 		<BookmarkFolder
 			key={folder.id}
 			folder={folder}
-			hiddenBookmarkIds={externalBookmarkIds}
 		/>
 	));
 
@@ -143,15 +140,15 @@ export const BookmarksContainer: React.FC = () => {
 	if (visibleFolders.length === 0 && homeBookmarks.length === 0) {
 			return (
 				<div className='text-center p-4 text-[var(--text-primary)]'>
-					<h3 className='text-2xl mb-2.5'>{activeWorkspace ? '这个工作区还是空的' : '暂无书签'}</h3>
+					<h3 className='text-2xl mb-2.5'>{activeWorkspace ? '这个工作区还是空的' : '尚未创建工作区'}</h3>
 					<p className='mb-5 text-base text-[var(--text-secondary)] leading-relaxed'>
-						{activeWorkspace ? '选择要在这里显示的书签或文件夹' : '添加一个常用网址，开始搭建你的新标签页'}
+						{activeWorkspace ? '选择要在这里显示的书签或文件夹' : '创建工作区，选择要在新标签页展示的书签'}
 					</p>
 					<button
 					type='button'
 					className='min-h-11 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
-						onClick={activeWorkspace ? openWorkspaceManager : openAddBookmark}>
-						{activeWorkspace ? '配置工作区' : '添加第一个书签'}
+						onClick={openWorkspaceManager}>
+						{activeWorkspace ? '配置工作区' : '新建工作区'}
 				</button>
 			</div>
 		);

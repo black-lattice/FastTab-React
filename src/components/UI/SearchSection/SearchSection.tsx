@@ -9,7 +9,6 @@ import { Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import {
 	ControlOutlined,
-	DownOutlined,
 	GlobalOutlined,
 	SearchOutlined,
 	SettingOutlined
@@ -183,7 +182,6 @@ export const SearchSection: React.FC = () => {
 					trigger={['click']}>
 					<button type='button' className='search-engine-trigger' title={selectedEngine.label} aria-label={`选择搜索引擎，当前为 ${selectedEngine.label}`}>
 						{renderEngineIcon(selectedEngine)}
-						<DownOutlined className='text-[9px] text-[var(--text-tertiary)]' />
 					</button>
 				</Dropdown>
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Checkbox, Input, Modal, Select, message } from 'antd';
 import { useBookmarkStore } from '../../store/bookmarkStore';
+import { useWorkspaceStore } from '../../store/workspaceStore';
 import { useUIStore } from '../../store/uiStore';
 import { flattenBookmarkFolders } from '../../utils/bookmarkTree';
 import { normalizeBookmarkUrl } from '../../utils/bookmarkUrl';
@@ -10,13 +11,11 @@ const AddBookmarkModal: React.FC = () => {
 	const {
 		bookmarksBarId,
 		folders,
-		createBookmark,
-		setBookmarkExternal
+		createBookmark
 	} = useBookmarkStore(useShallow(state => ({
 		bookmarksBarId: state.bookmarksBarId,
 		folders: state.folders,
-		createBookmark: state.createBookmark,
-		setBookmarkExternal: state.setBookmarkExternal
+		createBookmark: state.createBookmark
 	})));
 	const { isAddBookmarkOpen, closeAddBookmark } = useUIStore(
 		useShallow(state => ({
@@ -27,7 +26,11 @@ const AddBookmarkModal: React.FC = () => {
 	const [title, setTitle] = useState('');
 	const [url, setUrl] = useState('');
 	const [folderId, setFolderId] = useState('');
-	const [showOnHome, setShowOnHome] = useState(true);
+	const [showInWorkspace, setShowInWorkspace] = useState(true);
+	const activeWorkspaceId = useWorkspaceStore(state => state.activeWorkspaceId);
+	const workspaces = useWorkspaceStore(state => state.workspaces);
+	const workspace = workspaces.find(item => item.id === activeWorkspaceId);
+	const setWorkspaceItems = useWorkspaceStore(state => state.setWorkspaceItems);
 	const [isSaving, setIsSaving] = useState(false);
 
 	const folderOptions = useMemo(
@@ -46,11 +49,12 @@ const AddBookmarkModal: React.FC = () => {
 			setTitle('');
 			setUrl('');
 			setFolderId(bookmarksBarId);
-			setShowOnHome(true);
+			setShowInWorkspace(true);
 		}
 	}, [bookmarksBarId, isAddBookmarkOpen]);
 
 	const handleSave = async () => {
+		if (isSaving) return;
 		if (!title.trim()) {
 			message.error('请输入书签名称');
 			return;
@@ -64,8 +68,14 @@ const AddBookmarkModal: React.FC = () => {
 				url: normalizedUrl,
 				parentId: folderId || bookmarksBarId
 			});
-			if (showOnHome && bookmark.parentId !== bookmarksBarId) {
-				await setBookmarkExternal(bookmark.id, true);
+			if (showInWorkspace && workspace) {
+				try {
+					await setWorkspaceItems(workspace.id, 'bookmarkIds', [bookmark.id], true);
+				} catch {
+					message.warning('书签已保存，但加入工作区失败，请在书签管理中重新加入');
+					closeAddBookmark();
+					return;
+				}
 			}
 			message.success('书签已添加');
 			closeAddBookmark();
@@ -120,11 +130,11 @@ const AddBookmarkModal: React.FC = () => {
 						options={folderOptions}
 					/>
 				</label>
-				{folderId !== bookmarksBarId && (
+				{workspace && (
 					<Checkbox
-						checked={showOnHome}
-						onChange={event => setShowOnHome(event.target.checked)}>
-						同时显示在新标签页首页
+						checked={showInWorkspace}
+						onChange={event => setShowInWorkspace(event.target.checked)}>
+						同时加入“{workspace.name}”工作区
 					</Checkbox>
 				)}
 			</div>

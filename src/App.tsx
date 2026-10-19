@@ -7,7 +7,7 @@ import { WorkspaceBar } from './components/Workspace/WorkspaceBar';
 import { useBookmarkStore } from './store/bookmarkStore';
 import { useBackgroundStore } from './store/backgroundStore';
 import { getLayoutMetrics, useLayoutStore } from './store/layoutStore';
-import { HOME_WORKSPACE_ID, useWorkspaceStore } from './store/workspaceStore';
+import { useWorkspaceStore } from './store/workspaceStore';
 import { getWorkspaceContent } from './utils/workspaceContent';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ConfigProvider, theme } from 'antd';
@@ -34,8 +34,6 @@ function App() {
 		loadDisplaySettings,
 		folders,
 		bookmarks,
-		externalBookmarkIds,
-		rootBookmarkIds,
 		permissionState
 	} = useBookmarkStore(useShallow(state => ({
 		checkPermission: state.checkPermission,
@@ -43,8 +41,6 @@ function App() {
 		loadDisplaySettings: state.loadDisplaySettings,
 		folders: state.folders,
 		bookmarks: state.bookmarks,
-		externalBookmarkIds: state.externalBookmarkIds,
-		rootBookmarkIds: state.rootBookmarkIds,
 		permissionState: state.permissionState
 	})));
 	const { loadSettings: loadBackgroundSettings, resolvedTheme } = useBackgroundStore(
@@ -57,7 +53,6 @@ function App() {
 	const loadLayoutSettings = useLayoutStore(state => state.loadSettings);
 	const workspaces = useWorkspaceStore(state => state.workspaces);
 	const activeWorkspaceId = useWorkspaceStore(state => state.activeWorkspaceId);
-	const hiddenHomeFolderIds = useWorkspaceStore(state => state.hiddenHomeFolderIds);
 	const loadWorkspaces = useWorkspaceStore(state => state.loadWorkspaces);
 	const antDesignTheme = useMemo(() => ({
 		algorithm:
@@ -83,6 +78,8 @@ function App() {
 				if (hasPermission) {
 					await loadBookmarks();
 				}
+			} catch {
+				useBookmarkStore.setState({ error: '工作区或书签配置加载失败，请重试', loading: false });
 			} finally {
 				setIsAppReady(true);
 			}
@@ -143,15 +140,10 @@ function App() {
 		};
 	}, [isAppReady, loadBookmarks, permissionState.hasPermission]);
 
-	const activeWorkspace = activeWorkspaceId === HOME_WORKSPACE_ID
-		? undefined
-		: workspaces.find(workspace => workspace.id === activeWorkspaceId);
+	const activeWorkspace = workspaces.find(workspace => workspace.id === activeWorkspaceId);
 	const workspaceContent = getWorkspaceContent(
 		bookmarks,
 		folders,
-		rootBookmarkIds,
-		externalBookmarkIds,
-		hiddenHomeFolderIds,
 		activeWorkspace
 	);
 	const visibleItemCount = workspaceContent.bookmarks.length + workspaceContent.folders.length;

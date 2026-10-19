@@ -53,7 +53,7 @@ export const useUIStore = create<UIState>(set => ({
 	toggleAppearanceSettings: () =>
 		set(state => ({ isAppearanceSettingsOpen: !state.isAppearanceSettingsOpen })),
 
-	openWorkspaceManager: () => set({ isWorkspaceManagerOpen: true }),
+	openWorkspaceManager: () => set({ isBookmarkManagerOpen: true, selectedBookmarkIds: [] }),
 
 	closeWorkspaceManager: () => set({ isWorkspaceManagerOpen: false }),
 

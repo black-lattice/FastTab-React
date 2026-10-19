@@ -5,19 +5,9 @@ import { flattenBookmarkFolders } from './bookmarkTree';
 export const getWorkspaceContent = (
 	bookmarks: Bookmark[],
 	folders: Bookmark[],
-	rootBookmarkIds: string[],
-	externalBookmarkIds: string[],
-	hiddenHomeFolderIds: string[],
 	workspace?: Workspace
 ) => {
-	if (!workspace) {
-		const homeIds = new Set([...rootBookmarkIds, ...externalBookmarkIds]);
-		const hiddenFolderIds = new Set(hiddenHomeFolderIds);
-		return {
-			bookmarks: bookmarks.filter(bookmark => homeIds.has(bookmark.id)),
-			folders: folders.filter(folder => !hiddenFolderIds.has(folder.id))
-		};
-	}
+	if (!workspace) return { bookmarks: [], folders: [] };
 
 	const bookmarkIds = new Set(workspace.bookmarkIds);
 	const folderIds = new Set(workspace.folderIds);

@@ -1,19 +1,14 @@
-import { AppstoreAddOutlined, HomeOutlined } from '@ant-design/icons';
+import { HomeOutlined } from '@ant-design/icons';
 import { useEffect, useRef } from 'react';
-import { useUIStore } from '../../store/uiStore';
+import { message } from 'antd';
 import { HOME_WORKSPACE_ID, useWorkspaceStore } from '../../store/workspaceStore';
-import { WorkspaceManagerModal } from './WorkspaceManagerModal';
 
 export const WorkspaceBar = () => {
 	const workspaces = useWorkspaceStore(state => state.workspaces);
 	const activeWorkspaceId = useWorkspaceStore(state => state.activeWorkspaceId);
 	const setActiveWorkspace = useWorkspaceStore(state => state.setActiveWorkspace);
-	const openWorkspaceManager = useUIStore(state => state.openWorkspaceManager);
 	const tabsRef = useRef<HTMLDivElement>(null);
-	const options = [
-		{ id: HOME_WORKSPACE_ID, name: '首页' },
-		...workspaces
-	];
+	const options = workspaces;
 
 	useEffect(() => {
 		const tabs = tabsRef.current;
@@ -27,6 +22,8 @@ export const WorkspaceBar = () => {
 		}
 	}, [activeWorkspaceId, workspaces.length]);
 
+	if (!options.length) return null;
+
 	return (
 		<>
 			<nav className='workspace-bar' aria-label='首页工作区'>
@@ -37,25 +34,15 @@ export const WorkspaceBar = () => {
 								key={option.id}
 								type='button'
 								className={`workspace-tab ${activeWorkspaceId === option.id ? 'is-active' : ''}`}
-								onClick={() => void setActiveWorkspace(option.id)}
+								onClick={() => void setActiveWorkspace(option.id).catch(() => message.error('切换工作区失败'))}
 								aria-current={activeWorkspaceId === option.id ? 'page' : undefined}>
 								{option.id === HOME_WORKSPACE_ID && <HomeOutlined aria-hidden='true' />}
 								<span>{option.name}</span>
 							</button>
 						))}
 					</div>
-					<span className='workspace-divider' aria-hidden='true' />
-					<button
-						type='button'
-						className='workspace-manage-button'
-						onClick={openWorkspaceManager}
-						aria-label='创建或管理工作区'>
-						<AppstoreAddOutlined aria-hidden='true' />
-						<span>工作区</span>
-					</button>
 				</div>
 			</nav>
-			<WorkspaceManagerModal />
 		</>
 	);
 };

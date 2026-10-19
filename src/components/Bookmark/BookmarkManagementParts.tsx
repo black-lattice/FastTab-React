@@ -6,11 +6,10 @@ import {
 	FolderOutlined,
 	SearchOutlined
 } from '@ant-design/icons';
-import { Button, Input, Segmented, Tooltip, message } from 'antd';
+import { Button, Input, Segmented, Tooltip } from 'antd';
 import type { Bookmark } from '../../types';
 import type { FlatBookmarkFolder } from '../../utils/bookmarkTree';
 import { useFavicon } from '../../hooks/useFavicon';
-import { useWorkspaceStore } from '../../store/workspaceStore';
 
 export type BookmarkDisplayFilter = 'all' | 'external' | 'internal';
 
@@ -41,7 +40,7 @@ export const BookmarkManagerHeader = () => (
 		<div>
 			<div className='text-lg font-semibold'>书签管理</div>
 			<div className='mt-0.5 text-xs font-normal text-[var(--text-tertiary)]'>
-				搜索、固定到首页或批量整理收藏
+				搜索、加入工作区或批量整理收藏
 			</div>
 		</div>
 	</div>
@@ -50,7 +49,7 @@ export const BookmarkManagerHeader = () => (
 interface BookmarkManagerToolbarProps {
 	searchText: string;
 	displayFilter: BookmarkDisplayFilter;
-	homeCount: number;
+	includedCount: number;
 	onSearchChange: (value: string) => void;
 	onFilterChange: (value: BookmarkDisplayFilter) => void;
 	onCleanup: () => void;
@@ -59,7 +58,7 @@ interface BookmarkManagerToolbarProps {
 export const BookmarkManagerToolbar = ({
 	searchText,
 	displayFilter,
-	homeCount,
+	includedCount,
 	onSearchChange,
 	onFilterChange,
 	onCleanup
@@ -78,8 +77,8 @@ export const BookmarkManagerToolbar = ({
 			onChange={value => onFilterChange(value as BookmarkDisplayFilter)}
 			options={[
 				{ label: '全部', value: 'all' },
-				{ label: `首页显示 ${homeCount}`, value: 'external' },
-				{ label: '文件夹内', value: 'internal' }
+				{ label: `已加入 ${includedCount}`, value: 'external' },
+				{ label: '未加入', value: 'internal' }
 			]}
 		/>
 		<Button icon={<ClearOutlined />} onClick={onCleanup}>整理书签</Button>
@@ -92,6 +91,10 @@ interface BookmarkFolderSidebarProps {
 	selectedFolderId: string;
 	totalCount: number;
 	onSelect: (id: string) => void;
+	includedFolderIds: Set<string>;
+	workspaceName: string;
+	disabled: boolean;
+	onIncludedChange: (id: string, included: boolean) => void;
 }
 
 export const BookmarkFolderSidebar = ({
@@ -99,19 +102,12 @@ export const BookmarkFolderSidebar = ({
 	folderCounts,
 	selectedFolderId,
 	totalCount,
-	onSelect
+	onSelect,
+	includedFolderIds,
+	workspaceName,
+	disabled,
+	onIncludedChange
 }: BookmarkFolderSidebarProps) => {
-	const hiddenHomeFolderIds = useWorkspaceStore(state => state.hiddenHomeFolderIds);
-	const setHomeFolderVisible = useWorkspaceStore(state => state.setHomeFolderVisible);
-	const updateFolderVisibility = async (id: string, title: string, visible: boolean) => {
-		try {
-			await setHomeFolderVisible(id, visible);
-			message.success(visible ? `“${title}”已显示在首页` : `“${title}”已从首页隐藏`);
-		} catch {
-			message.error('文件夹显示设置保存失败');
-		}
-	};
-
 	return (
 		<aside className='bookmark-folder-sidebar' aria-label='书签文件夹'>
 			<button
@@ -123,7 +119,7 @@ export const BookmarkFolderSidebar = ({
 				<em>{totalCount}</em>
 			</button>
 			{folders.map(({ folder, depth }) => {
-				const isVisibleOnHome = !hiddenHomeFolderIds.includes(folder.id);
+				const included = includedFolderIds.has(folder.id);
 				return (
 					<div
 						key={folder.id}
@@ -137,17 +133,17 @@ export const BookmarkFolderSidebar = ({
 							<span className='bookmark-folder-name' title={folder.title}>{folder.title}</span>
 							<em>{folderCounts.get(folder.id) || 0}</em>
 						</button>
-						{depth === 0 && (
-							<Tooltip title={isVisibleOnHome ? '从首页隐藏' : '显示在首页'}>
+							<Tooltip title={`${included ? '移除' : '加入'}“${workspaceName}”的文件夹入口`}>
 								<button
 									type='button'
-									className={`bookmark-folder-visibility ${isVisibleOnHome ? '' : 'is-hidden'}`}
-									onClick={() => void updateFolderVisibility(folder.id, folder.title, !isVisibleOnHome)}
-									aria-label={`${isVisibleOnHome ? '隐藏' : '显示'}文件夹“${folder.title}”`}>
-									{isVisibleOnHome ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+									className={`bookmark-folder-visibility ${included ? '' : 'is-hidden'}`}
+									disabled={disabled}
+									onClick={() => onIncludedChange(folder.id, !included)}
+									aria-label={`${folder.title} ${workspaceName}文件夹入口`}
+									aria-pressed={included}>
+									{included ? <EyeOutlined /> : <EyeInvisibleOutlined />}
 								</button>
 							</Tooltip>
-						)}
 					</div>
 				);
 			})}
